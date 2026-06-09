@@ -1,0 +1,28 @@
+@if(($totalPages ?? 1) > 1)
+    <div class="flex items-center justify-center gap-1 mt-6">
+        @if(($currentPage ?? 1) > 1)
+            <a href="{{ $baseUrl ?? '?' }}page={{ ($currentPage ?? 1) - 1 }}"
+                class="px-3 py-2 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100 transition-colors">
+                &larr; Prev
+            </a>
+        @endif
+
+        @for($i = 1; $i <= ($totalPages ?? 1); $i++)
+            @php
+                $isActive = ($currentPage ?? 1) === $i;
+            @endphp
+            <a href="{{ $baseUrl ?? '?' }}page={{ $i }}"
+                class="px-3 py-2 rounded-lg text-sm font-medium transition-colors
+                    {{ $isActive ? 'bg-indigo-600 text-white' : 'text-gray-600 hover:bg-gray-100' }}">
+                {{ $i }}
+            </a>
+        @endfor
+
+        @if(($currentPage ?? 1) < ($totalPages ?? 1))
+            <a href="{{ $baseUrl ?? '?' }}page={{ ($currentPage ?? 1) + 1 }}"
+                class="px-3 py-2 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100 transition-colors">
+                Next &rarr;
+            </a>
+        @endif
+    </div>
+@endif

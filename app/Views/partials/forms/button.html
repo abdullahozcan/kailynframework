@@ -1,0 +1,32 @@
+@php
+    $styles = [
+        'primary' => 'bg-indigo-600 text-white hover:bg-indigo-700 active:bg-indigo-800 shadow-sm',
+        'secondary' => 'bg-gray-600 text-white hover:bg-gray-700 active:bg-gray-800 shadow-sm',
+        'outline' => 'border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 active:bg-gray-100',
+        'danger' => 'bg-red-600 text-white hover:bg-red-700 active:bg-red-800 shadow-sm',
+        'ghost' => 'text-gray-600 hover:text-gray-900 hover:bg-gray-100',
+        'success' => 'bg-emerald-600 text-white hover:bg-emerald-700 active:bg-emerald-800 shadow-sm',
+    ];
+    $style = $styles[$type ?? 'primary'] ?? $styles['primary'];
+    $size = match($size ?? 'md') {
+        'sm' => 'px-3 py-1.5 text-xs',
+        'lg' => 'px-6 py-3 text-base',
+        default => 'px-4 py-2 text-sm',
+    };
+@endphp
+
+<button
+    type="{{ $submit ?? false ? 'submit' : 'button' }}"
+    name="{{ $name ?? '' }}"
+    {{ $disabled ?? false ? 'disabled' : '' }}
+    @if(isset($kOn)) k-on:{{ $kOn }} @endif
+    class="inline-flex items-center justify-center gap-2 rounded-lg font-medium transition-colors focus:outline-none focus:ring-4 focus:ring-indigo-500/20 disabled:opacity-50 disabled:cursor-not-allowed {{ $size }} {{ $style }} {{ $class ?? '' }}"
+>
+    @if(isset($icon))
+        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="{{ $icon }}"/>
+        </svg>
+    @endif
+
+    {{ $label ?? 'Button' }}
+</button>

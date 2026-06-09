@@ -1,16 +1,36 @@
-<div class="counter">
-    <h2>Counter: <span k-text="count">{{ $count }}</span></h2>
-
-    <div class="actions">
-        <button k-on:click="decrement">-</button>
-        <button k-on:click="reset">Reset</button>
-        <button k-on:click="increment">+</button>
+<div class="bg-white rounded-xl border border-gray-200 p-6 shadow-sm max-w-md">
+    <div class="flex items-baseline gap-2 mb-6">
+        <h3 class="text-lg font-semibold text-gray-900">Counter</h3>
+        <span class="text-3xl font-bold text-indigo-600" k-text="count">{{ $count }}</span>
     </div>
 
-    <div class="actions">
-        <button k-on:click="add(5)">+5</button>
-        <button k-on:click="add(10)">+10</button>
+    <div class="flex flex-wrap gap-2 mb-3">
+        <button k-on:click="decrement"
+            class="px-4 py-2 rounded-lg border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 active:bg-gray-100 transition-colors text-sm font-medium">
+            − Decrement
+        </button>
+        <button k-on:click="reset"
+            class="px-4 py-2 rounded-lg border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 active:bg-gray-100 transition-colors text-sm font-medium">
+            ↺ Reset
+        </button>
+        <button k-on:click="increment"
+            class="px-4 py-2 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 active:bg-indigo-800 transition-colors text-sm font-medium">
+            + Increment
+        </button>
     </div>
 
-    <p>Double value: {{ $count * 2 }}</p>
+    <div class="flex flex-wrap gap-2 mb-4">
+        <button k-on:click="add(5)"
+            class="px-3 py-1.5 rounded-lg border border-indigo-200 text-indigo-700 hover:bg-indigo-50 text-sm font-medium transition-colors">
+            +5
+        </button>
+        <button k-on:click="add(10)"
+            class="px-3 py-1.5 rounded-lg border border-indigo-200 text-indigo-700 hover:bg-indigo-50 text-sm font-medium transition-colors">
+            +10
+        </button>
+    </div>
+
+    <p class="text-sm text-gray-400 border-t border-gray-100 pt-3">
+        Double value: <span class="font-mono text-gray-600">{{ $count * 2 }}</span>
+    </p>
 </div>

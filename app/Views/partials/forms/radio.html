@@ -1,0 +1,30 @@
+<div class="@if($wrapper ?? true) mb-4 @endif">
+    @if(isset($label) && $label)
+        <p class="block text-sm font-medium text-gray-700 mb-2">{{ $label }}</p>
+    @endif
+
+    <div class="space-y-2">
+        @foreach($options as $opt)
+            @php
+                $optValue = is_string($opt) ? $opt : ($opt['value'] ?? '');
+                $optLabel = is_string($opt) ? $opt : ($opt['label'] ?? $optValue);
+            @endphp
+            <label class="flex items-center gap-2 cursor-pointer">
+                <input
+                    type="radio"
+                    name="{{ $name }}"
+                    value="{{ $optValue }}"
+                    {{ ($selected ?? '') === $optValue ? 'checked' : '' }}
+                    {{ $disabled ?? false ? 'disabled' : '' }}
+                    @if(isset($kModel)) k-model="{{ $kModel }}" @endif
+                    class="border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500"
+                >
+                <span class="text-sm text-gray-700">{{ $optLabel }}</span>
+            </label>
+        @endforeach
+    </div>
+
+    @if($error ?? false)
+        <p class="mt-1 text-sm text-red-500">{{ $error }}</p>
+    @endif
+</div>

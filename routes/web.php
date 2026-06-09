@@ -22,6 +22,10 @@ $router->get('/reactive', function (Kailyn\Template\Engine $view) {
     return $view->render('reactive-demo');
 });
 
+$router->get('/design', function (Kailyn\Template\Engine $view) {
+    return $view->render('design');
+});
+
 $router->post('/_kailyn/update', function (Kailyn\Http\Request $request) {
     $manager = app(Kailyn\Component\ComponentManager::class);
     return $manager->handleUpdate($request);

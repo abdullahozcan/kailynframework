@@ -1,0 +1,18 @@
+<div class="@if($wrapper ?? true) mb-4 @endif">
+    <label class="flex items-center gap-3 cursor-pointer">
+        <input
+            type="checkbox"
+            name="{{ $name }}"
+            value="{{ $value ?? '1' }}"
+            {{ $checked ?? false ? 'checked' : '' }}
+            {{ $disabled ?? false ? 'disabled' : '' }}
+            @if(isset($kModel)) k-model="{{ $kModel }}" @endif
+            class="sr-only peer"
+        >
+        <div class="relative w-11 h-6 bg-gray-200 peer-checked:bg-indigo-600 rounded-full transition-colors after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-full peer-disabled:opacity-50"></div>
+
+        @if(isset($label) && $label)
+            <span class="text-sm text-gray-700">{{ $label }}</span>
+        @endif
+    </label>
+</div>

@@ -1,0 +1,31 @@
+<div class="overflow-x-auto rounded-xl border border-gray-200 shadow-sm">
+    <table class="min-w-full divide-y divide-gray-200">
+        @if(isset($headers) && count($headers) > 0)
+            <thead class="bg-gray-50">
+                <tr>
+                    @foreach($headers as $header)
+                        <th scope="col" class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">{{ $header }}</th>
+                    @endforeach
+                </tr>
+            </thead>
+        @endif
+
+        <tbody class="divide-y divide-gray-100 bg-white">
+            @if(isset($rows) && count($rows) > 0)
+                @foreach($rows as $row)
+                    <tr class="hover:bg-gray-50 transition-colors">
+                        @foreach($row as $cell)
+                            <td class="px-4 py-3 text-sm text-gray-700">{{ $cell }}</td>
+                        @endforeach
+                    </tr>
+                @endforeach
+            @else
+                <tr>
+                    <td colspan="{{ count($headers ?? [1]) }}" class="px-4 py-8 text-center text-sm text-gray-400">
+                        {{ $emptyText ?? 'No data available' }}
+                    </td>
+                </tr>
+            @endif
+        </tbody>
+    </table>
+</div>

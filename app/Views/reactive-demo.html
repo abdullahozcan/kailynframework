@@ -3,8 +3,13 @@
 @section('title', 'Reactive Demo')
 
 @section('content')
-    <h2>Reactive Component Demo</h2>
-    <p>This is a Livewire-like reactive component:</p>
+    <div class="mb-8">
+        <h2 class="text-3xl font-bold text-gray-900 mb-2">Reactive Component Demo</h2>
+        <p class="text-gray-500">
+            This is a Livewire-like reactive component.
+            Click the buttons below &mdash; the count updates via AJAX without a page reload.
+        </p>
+    </div>
 
     @component('counter')
 @endsection

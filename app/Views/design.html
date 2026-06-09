@@ -1,0 +1,197 @@
+@extends('layouts.app')
+
+@section('title', 'Design System')
+
+@section('content')
+    @include('partials.navbar', [
+        'brand' => 'Design System',
+        'brandUrl' => '/design',
+        'active' => '/design',
+        'links' => [
+            ['label' => 'Home', 'url' => '/'],
+            ['label' => 'Reactive', 'url' => '/reactive'],
+            ['label' => 'Design', 'url' => '/design'],
+        ],
+    ])
+
+    <div class="mt-8 space-y-12">
+        {{-- Typography --}}
+        <section>
+            <h2 class="text-2xl font-bold text-gray-900 mb-1">Typography</h2>
+            <p class="text-gray-500 mb-4">Text styles available in the framework.</p>
+            <div class="space-y-2">
+                <h1 class="text-4xl font-bold text-gray-900">Heading 1</h1>
+                <h2 class="text-3xl font-bold text-gray-900">Heading 2</h2>
+                <h3 class="text-2xl font-semibold text-gray-900">Heading 3</h3>
+                <p class="text-base text-gray-700">Body text. Lorem ipsum dolor sit amet, consectetur adipiscing elit.</p>
+                <p class="text-sm text-gray-500">Small / muted text.</p>
+            </div>
+        </section>
+
+        {{-- Colors --}}
+        <section>
+            <h2 class="text-2xl font-bold text-gray-900 mb-1">Colors</h2>
+            <p class="text-gray-500 mb-4">Brand and utility colors.</p>
+            <div class="flex flex-wrap gap-3">
+                <div class="w-16 h-16 rounded-lg bg-indigo-600 shadow-sm"></div>
+                <div class="w-16 h-16 rounded-lg bg-emerald-500 shadow-sm"></div>
+                <div class="w-16 h-16 rounded-lg bg-red-500 shadow-sm"></div>
+                <div class="w-16 h-16 rounded-lg bg-amber-500 shadow-sm"></div>
+                <div class="w-16 h-16 rounded-lg bg-sky-500 shadow-sm"></div>
+                <div class="w-16 h-16 rounded-lg bg-purple-600 shadow-sm"></div>
+                <div class="w-16 h-16 rounded-lg bg-pink-500 shadow-sm"></div>
+                <div class="w-16 h-16 rounded-lg bg-gray-900 shadow-sm"></div>
+            </div>
+        </section>
+
+        {{-- Card --}}
+        <section>
+            <h2 class="text-2xl font-bold text-gray-900 mb-1">Cards</h2>
+            <p class="text-gray-500 mb-4">Content containers with optional header and footer.</p>
+            <div class="grid md:grid-cols-2 gap-4">
+                @include('partials.card', [
+                    'title' => 'Simple Card',
+                    'subtitle' => 'With a subtitle',
+                    'body' => 'This is the card body. You can put any content here.',
+                ])
+                @include('partials.card', [
+                    'header' => '<div class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-emerald-500"></span><span class="text-sm font-semibold text-gray-900">Custom Header</span></div>',
+                    'body' => 'Card with a custom header slot and footer.',
+                    'footer' => '<button class="px-3 py-1.5 text-sm font-medium rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 transition-colors">Action</button>',
+                ])
+            </div>
+        </section>
+
+        {{-- Table --}}
+        <section>
+            <h2 class="text-2xl font-bold text-gray-900 mb-1">Tables</h2>
+            <p class="text-gray-500 mb-4">Data tables with headers and rows.</p>
+            @include('partials.table', [
+                'headers' => ['Name', 'Email', 'Role', 'Status'],
+                'rows' => [
+                    ['Alice Johnson', 'alice@example.com', 'Admin', '<span class="text-emerald-600 font-medium">Active</span>'],
+                    ['Bob Smith', 'bob@example.com', 'Editor', '<span class="text-emerald-600 font-medium">Active</span>'],
+                    ['Carol Lee', 'carol@example.com', 'Viewer', '<span class="text-gray-400">Inactive</span>'],
+                ],
+            ])
+        </section>
+
+        {{-- Pagination --}}
+        <section>
+            <h2 class="text-2xl font-bold text-gray-900 mb-1">Pagination</h2>
+            <p class="text-gray-500 mb-4">Page navigation.</p>
+            @include('partials.pagination', [
+                'currentPage' => 3,
+                'totalPages' => 10,
+                'baseUrl' => '/design?page=',
+            ])
+        </section>
+
+        {{-- Alerts --}}
+        <section>
+            <h2 class="text-2xl font-bold text-gray-900 mb-1">Alerts</h2>
+            <p class="text-gray-500 mb-4">Feedback messages.</p>
+            <div class="space-y-3">
+                @include('partials.alert', ['type' => 'info', 'title' => 'Information', 'slot' => 'This is an info alert.'])
+                @include('partials.alert', ['type' => 'success', 'title' => 'Success!', 'slot' => 'Operation completed successfully.'])
+                @include('partials.alert', ['type' => 'warning', 'title' => 'Warning', 'slot' => 'Please review your input.'])
+                @include('partials.alert', ['type' => 'error', 'title' => 'Error', 'slot' => 'Something went wrong.', 'dismissible' => true])
+            </div>
+        </section>
+
+        {{-- Badges --}}
+        <section>
+            <h2 class="text-2xl font-bold text-gray-900 mb-1">Badges</h2>
+            <p class="text-gray-500 mb-4">Labels and status indicators.</p>
+            <div class="flex flex-wrap gap-2">
+                @include('partials.badge', ['slot' => 'Default'])
+                @include('partials.badge', ['color' => 'red', 'slot' => 'Red'])
+                @include('partials.badge', ['color' => 'yellow', 'slot' => 'Yellow'])
+                @include('partials.badge', ['color' => 'green', 'slot' => 'Green'])
+                @include('partials.badge', ['color' => 'blue', 'slot' => 'Blue'])
+                @include('partials.badge', ['color' => 'indigo', 'slot' => 'Indigo'])
+                @include('partials.badge', ['color' => 'purple', 'slot' => 'Purple'])
+                @include('partials.badge', ['color' => 'pink', 'slot' => 'Pink'])
+                @include('partials.badge', ['color' => 'green', 'dot' => true, 'slot' => 'Online'])
+                @include('partials.badge', ['color' => 'gray', 'dot' => true, 'slot' => 'Away'])
+            </div>
+        </section>
+
+        {{-- Progress --}}
+        <section>
+            <h2 class="text-2xl font-bold text-gray-900 mb-1">Progress Bars</h2>
+            <p class="text-gray-500 mb-4">Loading and completion indicators.</p>
+            <div class="space-y-4 max-w-md">
+                @include('partials.progress', ['value' => 75, 'label' => 'Downloads', 'color' => 'blue'])
+                @include('partials.progress', ['value' => 45, 'label' => 'Storage', 'color' => 'green', 'showValue' => true])
+                @include('partials.progress', ['value' => 100, 'label' => 'Completed', 'color' => 'indigo'])
+            </div>
+        </section>
+
+        {{-- Spinner --}}
+        <section>
+            <h2 class="text-2xl font-bold text-gray-900 mb-1">Spinners</h2>
+            <p class="text-gray-500 mb-4">Loading states.</p>
+            <div class="flex items-center gap-6">
+                @include('partials.spinner', ['size' => 'sm'])
+                @include('partials.spinner', ['slot' => 'Loading...'])
+                @include('partials.spinner', ['size' => 'lg'])
+            </div>
+        </section>
+
+        {{-- Form Inputs --}}
+        <section>
+            <h2 class="text-2xl font-bold text-gray-900 mb-1">Form Inputs</h2>
+            <p class="text-gray-500 mb-4">All form field types.</p>
+            <div class="grid md:grid-cols-2 gap-6 max-w-2xl">
+                @include('partials.forms.input', ['name' => 'text', 'label' => 'Text Input', 'placeholder' => 'Enter text...'])
+                @include('partials.forms.input-icon', ['name' => 'email', 'label' => 'Email', 'type' => 'email', 'placeholder' => 'you@example.com', 'icon' => '<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>'])
+                @include('partials.forms.select', ['name' => 'country', 'label' => 'Select', 'options' => ['' => 'Choose...', 'tr' => 'Turkey', 'us' => 'United States', 'uk' => 'United Kingdom']])
+                @include('partials.forms.textarea', ['name' => 'bio', 'label' => 'Textarea', 'placeholder' => 'Write something...'])
+                @include('partials.forms.checkbox', ['name' => 'agree', 'label' => 'I agree to the terms'])
+                @include('partials.forms.radio', ['name' => 'gender', 'value' => 'female', 'label' => 'Female', 'checked' => false])
+                @include('partials.forms.radio', ['name' => 'gender', 'value' => 'male', 'label' => 'Male', 'checked' => true])
+                @include('partials.forms.toggle', ['name' => 'notifications', 'label' => 'Notifications', 'checked' => true])
+                @include('partials.forms.range', ['name' => 'volume', 'label' => 'Volume', 'value' => 60, 'min' => 0, 'max' => 100])
+                @include('partials.forms.button', ['label' => 'Submit', 'type' => 'submit', 'variant' => 'primary'])
+                @include('partials.forms.button', ['label' => 'Cancel', 'type' => 'button', 'variant' => 'secondary'])
+            </div>
+        </section>
+
+        {{-- Modal Trigger --}}
+        <section>
+            <h2 class="text-2xl font-bold text-gray-900 mb-1">Modal</h2>
+            <p class="text-gray-500 mb-4">Dialog overlays.</p>
+            <button onclick="document.getElementById('demo-modal').classList.remove('hidden')"
+                class="px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700 transition-colors">
+                Open Modal
+            </button>
+            @include('partials.modal', [
+                'id' => 'demo-modal',
+                'title' => 'Confirm Action',
+                'body' => 'Are you sure you want to proceed with this action? This cannot be undone.',
+                'footer' => '<button onclick="document.getElementById(\'demo-modal\').classList.add(\'hidden\')" class="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 text-sm font-medium hover:bg-gray-50 transition-colors">Cancel</button>
+                            <button class="px-4 py-2 rounded-lg bg-red-600 text-white text-sm font-medium hover:bg-red-700 transition-colors">Confirm</button>',
+            ])
+        </section>
+
+        {{-- Reactive Components --}}
+        <section>
+            <h2 class="text-2xl font-bold text-gray-900 mb-1">Reactive Components</h2>
+            <p class="text-gray-500 mb-4">Livewire-like components with AJAX updates.</p>
+            <div class="space-y-6">
+                <h3 class="text-lg font-semibold text-gray-800">Counter</h3>
+                @component('counter')
+
+                <h3 class="text-lg font-semibold text-gray-800">Toggle</h3>
+                @component('toggle', ['label' => 'Dark Mode'])
+
+                <h3 class="text-lg font-semibold text-gray-800">Autocomplete</h3>
+                @component('autocomplete', ['placeholder' => 'Search fruits...'])
+
+                <h3 class="text-lg font-semibold text-gray-800">Date Picker</h3>
+                @component('datepicker')
+            </div>
+        </section>
+    </div>
+@endsection

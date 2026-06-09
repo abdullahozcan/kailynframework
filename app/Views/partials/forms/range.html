@@ -1,0 +1,28 @@
+<div class="@if($wrapper ?? true) mb-4 @endif">
+    @if(isset($label) && $label)
+        <div class="flex items-center justify-between mb-1">
+            <label for="{{ $name }}" class="text-sm font-medium text-gray-700">{{ $label }}</label>
+            <span class="text-sm text-gray-500" id="{{ $name }}_val">{{ $value ?? $min ?? 0 }}</span>
+        </div>
+    @endif
+
+    <input
+        type="range"
+        name="{{ $name }}"
+        id="{{ $name }}"
+        min="{{ $min ?? 0 }}"
+        max="{{ $max ?? 100 }}"
+        step="{{ $step ?? 1 }}"
+        value="{{ $value ?? $min ?? 0 }}"
+        {{ $disabled ?? false ? 'disabled' : '' }}
+        @if(isset($kModel)) k-model="{{ $kModel }}" @endif
+        oninput="document.getElementById('{{ $name }}_val').textContent=this.value"
+        class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-indigo-600
+            {{ $class ?? '' }}"
+    >
+
+    <div class="flex justify-between text-xs text-gray-400 mt-1">
+        <span>{{ $min ?? 0 }}</span>
+        <span>{{ $max ?? 100 }}</span>
+    </div>
+</div>

@@ -1,0 +1,33 @@
+<div class="@if($wrapper ?? true) mb-4 @endif">
+    @if(isset($label) && $label)
+        <label for="{{ $name }}" class="block text-sm font-medium text-gray-700 mb-1">{{ $label }}</label>
+    @endif
+
+    <div class="flex items-center gap-3">
+        <div class="relative">
+            <input
+                type="color"
+                name="{{ $name }}"
+                id="{{ $name }}"
+                value="{{ $value ?? '#4f46e5' }}"
+                {{ $disabled ?? false ? 'disabled' : '' }}
+                @if(isset($kModel)) k-model="{{ $kModel }}" @endif
+                onchange="document.getElementById('{{ $name }}_hex').value = this.value"
+                class="h-10 w-16 rounded-lg border border-gray-300 cursor-pointer bg-white p-1"
+            >
+        </div>
+
+        <input
+            type="text"
+            id="{{ $name }}_hex"
+            value="{{ $value ?? '#4f46e5' }}"
+            placeholder="#hex"
+            oninput="document.getElementById('{{ $name }}').value = this.value; this.style.borderColor = this.value"
+            class="block w-28 rounded-lg border border-gray-300 px-3 py-2 text-sm font-mono shadow-sm transition-colors focus:border-indigo-500 focus:outline-none focus:ring-4 focus:ring-indigo-500/20 {{ $class ?? '' }}"
+        >
+    </div>
+
+    @if($error ?? false)
+        <p class="mt-1 text-sm text-red-500">{{ $error }}</p>
+    @endif
+</div>
