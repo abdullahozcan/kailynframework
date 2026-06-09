@@ -130,3 +130,20 @@ if (!function_exists('method_field')) {
         return '<input type="hidden" name="_method" value="' . strtoupper($method) . '">';
     }
 }
+
+if (!function_exists('cache')) {
+    function cache(string $key = null, mixed $value = null, ?int $ttl = null): mixed
+    {
+        $manager = app(Kailyn\Cache\CacheManager::class);
+
+        if ($key === null) {
+            return $manager;
+        }
+
+        if ($value !== null) {
+            return $manager->set($key, $value, $ttl);
+        }
+
+        return $manager->get($key);
+    }
+}

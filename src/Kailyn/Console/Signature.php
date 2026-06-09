@@ -50,7 +50,7 @@ class Signature
         foreach ($matches[1] as $token) {
             $token = trim($token);
 
-            if (str_starts_with($token, '--')) {
+            if (str_starts_with($token, '--') || str_starts_with($token, '-')) {
                 $this->parseOption($token);
             } else {
                 $this->parseArgument($token);
@@ -94,7 +94,8 @@ class Signature
 
     private function parseOption(string $token): void
     {
-        $token = ltrim($token, '-');
+        $isShort = str_starts_with($token, '-') && !str_starts_with($token, '--');
+        $token = preg_replace('/^-{1,2}/', '', $token);
         $name = $token;
         $shortcut = null;
         $default = null;
@@ -109,7 +110,12 @@ class Signature
         }
 
         if (str_contains($name, '|')) {
-            [$shortcut, $name] = explode('|', $name, 2);
+            $parts = explode('|', $name, 2);
+            if ($isShort) {
+                [$shortcut, $name] = $parts;
+            } else {
+                [$name, $shortcut] = $parts;
+            }
         }
 
         $description = '';

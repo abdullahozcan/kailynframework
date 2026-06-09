@@ -58,7 +58,9 @@ php bin/tulpar make:model User
 php bin/tulpar make:model Post --force
 ```
 
-**Oluşturulan dosya:** `app/Models/{Name}.php`
+**Oluşturulan dosyalar:**
+- `app/Models/{Name}.php`
+- `database/migrations/{timestamp}_create_{table}_table.php` (`-m` ile)
 
 ```php
 <?php
@@ -105,6 +107,85 @@ class HomeController
 ```
 
 Resource controller (`--resource` ile birlikte `index`, `show`, `store`, `update`, `destroy` metotlarını içerir).
+
+---
+
+### `make:migration`
+
+Yeni bir migration dosyası oluşturur.
+
+| Argüman | Açıklama |
+|---------|----------|
+| `name` | Migration adı |
+| `--create=` | Tablo oluşturma migration'ı (`Schema::create` stub) |
+| `--table=` | Tablo değiştirme migration'ı (`Schema::table` stub) |
+
+```bash
+php bin/tulpar make:migration create_users_table --create=users
+php bin/tulpar make:migration add_email_to_users --table=users
+php bin/tulpar make:migration add_index_to_posts
+```
+
+**Oluşturulan dosya:** `database/migrations/{timestamp}_{name}.php`
+
+```php
+<?php
+
+use Kailyn\Database\Schema;
+use Kailyn\Database\Migration;
+
+return new class extends Migration
+{
+    public function up(): void
+    {
+        Schema::create('users', function ($table) {
+            $table->id();
+            $table->timestamps();
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::drop('users');
+    }
+};
+```
+
+---
+
+### `migrate`
+
+Bekleyen migration'ları çalıştırır.
+
+```bash
+php bin/tulpar migrate
+```
+
+---
+
+### `migrate:rollback`
+
+Son migration batch'lerini geri alır.
+
+| Argüman | Varsayılan | Açıklama |
+|---------|-----------|----------|
+| `--step` | `1` | Geri alınacak batch sayısı |
+
+```bash
+php bin/tulpar migrate:rollback
+php bin/tulpar migrate:rollback --step=3
+```
+
+---
+
+### `migrate:fresh`
+
+Tüm tabloları drop edip tüm migration'ları yeniden çalıştırır.
+
+```bash
+php bin/tulpar migrate:fresh
+php bin/tulpar migrate:fresh --force
+```
 
 ---
 
@@ -348,9 +429,180 @@ $router->get('/demo', fn() => view('reactive-demo'));
 
 ---
 
-## Veritabanı
+## Cache Sistemi
 
-## Bağlantı
+Redis, File ve Database backend'leri ile çoklu store desteği.
+
+### Konfigürasyon
+
+```php
+<?php // config/cache.php
+
+return [
+    'default' => env('CACHE_DRIVER', 'file'),
+    'prefix'  => env('CACHE_PREFIX', 'kailyn_'),
+    'stores'  => [
+        'file' => [
+            'driver' => 'file',
+            'path'   => storage_path('cache'),
+        ],
+        'redis' => [
+            'driver'   => 'redis',
+            'host'     => env('REDIS_HOST', '127.0.0.1'),
+            'port'     => env('REDIS_PORT', 6379),
+            'password' => env('REDIS_PASSWORD'),
+            'database' => env('REDIS_DB', 0),
+        ],
+        'database' => [
+            'driver'     => 'database',
+            'connection' => env('DB_CONNECTION', 'sqlite'),
+            'table'      => 'cache',
+        ],
+    ],
+];
+```
+
+### Kullanım
+
+```php
+// Helper
+cache('key');                  // get
+cache('key', 'value', 3600);  // set with TTL (saniye)
+cache()->remember('key', 3600, fn() => expensiveQuery());
+cache()->rememberForever('key', fn() => expensiveQuery());
+cache()->pull('key');         // get + delete
+cache()->has('key');          // bool
+cache()->delete('key');
+cache()->clear();
+
+// Named store
+cache()->store('redis')->set('key', 'value');
+cache()->store('file')->get('key');
+```
+
+### Custom Driver
+
+```php
+cache()->extend('custom', function ($config) {
+    return new CustomCacheDriver($config);
+});
+```
+
+### Cache Driver API
+
+| Metot | Açıklama |
+|-------|----------|
+| `get(key, default)` | Değer oku |
+| `set(key, value, ttl)` | Değer yaz (ttl = saniye, null = kalıcı) |
+| `delete(key)` | Sil |
+| `clear()` | Tümünü temizle |
+| `has(key)` | Varlık kontrolü |
+| `remember(key, ttl, callback)` | Yoksa callback çalıştır, cache'le |
+| `rememberForever(key, callback)` | Kalıcı remember |
+| `pull(key, default)` | Oku + sil |
+
+---
+
+## Migration Sistemi
+
+Tabloları versiyon kontrolü altında yönetir. Migration dosyaları `database/migrations/` dizininde bulunur.
+
+### Migration Oluşturma
+
+```php
+<?php
+// database/migrations/2026_01_15_000001_create_users_table.php
+
+use Kailyn\Database\Schema;
+use Kailyn\Database\Migration;
+
+return new class extends Migration
+{
+    public function up(): void
+    {
+        Schema::create('users', function ($table) {
+            $table->id();
+            $table->string('name');
+            $table->string('email')->unique();
+            $table->string('password');
+            $table->timestamps();
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::drop('users');
+    }
+};
+```
+
+### Migration'ları Çalıştırma
+
+```bash
+php bin/tulpar migrate
+```
+
+Her migration batch numarası ile kaydedilir. Aynı batch'teki migration'lar birlikte rollback edilir.
+
+### Rollback
+
+```bash
+php bin/tulpar migrate:rollback        # son batch'i geri al
+php bin/tulpar migrate:rollback --step=3  # son 3 batch'i geri al
+```
+
+### Fresh (Sıfırdan)
+
+Tüm tabloları drop edip tüm migration'ları yeniden çalıştırır:
+
+```bash
+php bin/tulpar migrate:fresh
+php bin/tulpar migrate:fresh --force  # onay sormadan
+```
+
+### Schema Builder
+
+Migration'lar içinde kullanılan Schema Builder desteği:
+
+```php
+Schema::create('products', function ($table) {
+    $table->id();
+    $table->string('name', 100);
+    $table->text('description')->nullable();
+    $table->integer('price')->unsigned();
+    $table->boolean('is_active')->default(true);
+    $table->foreignId('user_id')->constrained()->onDelete('cascade');
+    $table->timestamps();
+    $table->softDeletes();
+});
+```
+
+| Metot | Açıklama |
+|-------|----------|
+| `id()` | Big increments primary key |
+| `increments(name)` | Auto increment |
+| `string(name, length)` | VARCHAR |
+| `text(name)` | TEXT |
+| `integer(name)` | INT |
+| `boolean(name)` | TINYINT(1) |
+| `date(name)` / `dateTime(name)` | Tarih alanları |
+| `timestamp(name)` | TIMESTAMP |
+| `timestamps()` | `created_at` + `updated_at` |
+| `softDeletes()` | `deleted_at` alanı |
+| `float(name, precision, scale)` | Float |
+| `decimal(name, precision, scale)` | Decimal |
+| `json(name)` / `jsonb(name)` | JSON |
+| `foreignId(name)` | Unsigned big integer (FK için) |
+| `nullable()` | NULL değere izin ver |
+| `default(value)` | Varsayılan değer |
+| `unique()` | Unique constraint |
+| `unsigned()` | Unsigned |
+| `foreign(col)->references(col)->on(table)` | Foreign key |
+| `index(columns)` | Index |
+
+---
+
+## Veritabanı
 
 ```php
 use Kailyn\Database\Connection;
@@ -574,6 +826,12 @@ kailyn/
 │   ├── Foundation/Application.php      # App container
 │   ├── Container/Container.php         # DI container
 │   ├── Config/Config.php               # Config loader
+│   ├── Cache/
+│   │   ├── CacheDriver.php             # Cache interface
+│   │   ├── CacheManager.php            # Cache manager
+│   │   ├── FileCacheDriver.php         # File driver
+│   │   ├── RedisCacheDriver.php        # Redis driver
+│   │   └── DatabaseCacheDriver.php     # Database driver
 │   ├── Http/
 │   │   ├── Kernel.php                  # HTTP pipeline
 │   │   ├── Request.php                 # Request wrapper
@@ -597,7 +855,10 @@ kailyn/
 │   ├── Database/
 │   │   ├── Connection.php              # PDO wrapper
 │   │   ├── QueryBuilder.php            # Fluent query builder
-│   │   └── Model.php                   # ActiveRecord
+│   │   ├── Model.php                   # ActiveRecord
+│   │   ├── Migration.php               # Migration base class
+│   │   ├── Migrator.php                # Migration runner
+│   │   └── Schema.php                  # Schema builder
 │   ├── Validation/Validator.php        # Validation
 │   ├── Session/SessionManager.php      # Session management
 │   └── helpers.php                     # Global helpers
@@ -608,7 +869,11 @@ kailyn/
 │   └── Views/                          # Template files
 ├── config/
 │   ├── app.php                         # App config
+│   ├── cache.php                       # Cache config
 │   └── database.php                    # Database config
+├── database/migrations/                # Migration files
 ├── routes/web.php                      # Route definitions
-└── storage/views/                      # Compiled template cache
+└── storage/
+    ├── cache/                          # File cache
+    └── views/                          # Compiled template cache
 ```

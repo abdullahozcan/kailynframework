@@ -4,7 +4,11 @@ namespace Kailyn\Console;
 
 use Kailyn\Console\Commands\MakeComponentCommand;
 use Kailyn\Console\Commands\MakeControllerCommand;
+use Kailyn\Console\Commands\MakeMigrationCommand;
 use Kailyn\Console\Commands\MakeModelCommand;
+use Kailyn\Console\Commands\MigrateCommand;
+use Kailyn\Console\Commands\MigrateFreshCommand;
+use Kailyn\Console\Commands\MigrateRollbackCommand;
 use Kailyn\Console\Commands\RouteListCommand;
 use Kailyn\Console\Commands\ServeCommand;
 use Kailyn\Foundation\Application;
@@ -33,6 +37,10 @@ class Kernel
             MakeModelCommand::class,
             MakeControllerCommand::class,
             MakeComponentCommand::class,
+            MakeMigrationCommand::class,
+            MigrateCommand::class,
+            MigrateRollbackCommand::class,
+            MigrateFreshCommand::class,
             RouteListCommand::class,
         ];
     }

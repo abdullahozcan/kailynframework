@@ -2,6 +2,7 @@
 
 namespace Kailyn\Foundation;
 
+use Kailyn\Cache\CacheManager;
 use Kailyn\Component\ComponentManager;
 use Kailyn\Config\Config;
 use Kailyn\Container\Container;
@@ -51,6 +52,9 @@ class Application extends Container
         $this->singleton(Engine::class, fn() => new Engine(
             $this->viewPath(),
             $this->storagePath('views')
+        ));
+        $this->singleton(CacheManager::class, fn() => new CacheManager(
+            $this->make(Config::class)->get('cache', [])
         ));
 
         $this->registerMiddleware();
