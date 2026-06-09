@@ -5,11 +5,11 @@ namespace App\Middleware;
 use Kailyn\Http\Middleware;
 use Kailyn\Http\Request;
 use Kailyn\Http\Response;
-use Closure;
 
-class SecurityHeadersMiddleware implements Middleware
+
+class SecurityHeadersMiddleware extends Middleware
 {
-    public function handle(Request $request, Closure $next): Response
+    public function handle(Request $request, callable $next): Response
     {
         $response = $next($request);
 

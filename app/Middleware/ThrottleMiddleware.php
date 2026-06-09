@@ -5,9 +5,9 @@ namespace App\Middleware;
 use Kailyn\Http\Middleware;
 use Kailyn\Http\Request;
 use Kailyn\Http\Response;
-use Closure;
 
-class ThrottleMiddleware implements Middleware
+
+class ThrottleMiddleware extends Middleware
 {
     protected int $maxAttempts;
     protected int $decayMinutes;
@@ -18,7 +18,7 @@ class ThrottleMiddleware implements Middleware
         $this->decayMinutes = $decayMinutes;
     }
 
-    public function handle(Request $request, Closure $next): Response
+    public function handle(Request $request, callable $next): Response
     {
         $key = $this->resolveRequestSignature($request);
         $attempts = $this->getAttempts($key);

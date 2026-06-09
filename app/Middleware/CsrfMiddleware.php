@@ -5,15 +5,15 @@ namespace App\Middleware;
 use Kailyn\Http\Middleware;
 use Kailyn\Http\Request;
 use Kailyn\Http\Response;
-use Closure;
 
-class CsrfMiddleware implements Middleware
+
+class CsrfMiddleware extends Middleware
 {
     protected array $except = [
         '/_kailyn/update',
     ];
 
-    public function handle(Request $request, Closure $next): Response
+    public function handle(Request $request, callable $next): Response
     {
         if ($this->isReading($request)) {
             return $next($request);

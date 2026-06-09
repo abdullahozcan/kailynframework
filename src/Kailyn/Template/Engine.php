@@ -35,13 +35,13 @@ class Engine
     {
         $this->validateViewName($view);
         $sections = $this->sections;
-        $stack = $this->sectionStack;
+        $sectionStack = $this->sectionStack;
         $layout = $this->layout;
 
-        $result = $this->renderRaw($view, $data);
+        $result = $this->renderRawContent($view, $data);
 
         $this->sections = $sections;
-        $this->sectionStack = $stack;
+        $this->sectionStack = $sectionStack;
         $this->layout = $layout;
 
         return $result;
@@ -67,6 +67,19 @@ class Engine
         }
 
         return $content;
+    }
+
+    protected function renderRawContent(string $view, array $data): string
+    {
+        $compiled = $this->getCompiled($view);
+        $__env = $this;
+
+        extract($data, EXTR_SKIP);
+
+        ob_start();
+        require $compiled;
+
+        return ob_get_clean();
     }
 
     protected function renderLayout(string $layout, array $data): string
