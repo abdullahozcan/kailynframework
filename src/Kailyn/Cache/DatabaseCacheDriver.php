@@ -50,19 +50,30 @@ class DatabaseCacheDriver implements CacheDriver
             return $default;
         }
 
-        return unserialize($row->value);
+        $data = json_decode($row->value, true);
+        return $data !== null ? $data : $default;
     }
 
     public function set(string $key, mixed $value, ?int $ttl = null): bool
     {
         $expires = $ttl !== null ? date('Y-m-d H:i:s', time() + $ttl) : null;
-        $serialized = serialize($value);
+        $serialized = json_encode($value);
 
-        $this->connection->statement(
-            "INSERT INTO {$this->table} (`key`, value, expires) VALUES (?, ?, ?)
-             ON CONFLICT(`key`) DO UPDATE SET value = ?, expires = ?",
-            [$this->prefix($key), $serialized, $expires, $serialized, $expires]
-        );
+        $driver = $this->connection->getDriverName();
+
+        if (in_array($driver, ['mysql'])) {
+            $this->connection->statement(
+                "INSERT INTO {$this->table} (`key`, value, expires) VALUES (?, ?, ?)
+                 ON DUPLICATE KEY UPDATE value = VALUES(value), expires = VALUES(expires)",
+                [$this->prefix($key), $serialized, $expires]
+            );
+        } else {
+            $this->connection->statement(
+                "INSERT INTO {$this->table} (`key`, value, expires) VALUES (?, ?, ?)
+                 ON CONFLICT(`key`) DO UPDATE SET value = ?, expires = ?",
+                [$this->prefix($key), $serialized, $expires, $serialized, $expires]
+            );
+        }
 
         return true;
     }

@@ -74,6 +74,10 @@ class Migrator
 
     public function run(string $migration): void
     {
+        if (str_contains($migration, '..') || str_contains($migration, '/') || str_contains($migration, '\\')) {
+            throw new RuntimeException("Invalid migration name: {$migration}");
+        }
+
         $file = $this->migrationPath . '/' . $migration . '.php';
 
         if (!file_exists($file)) {
@@ -93,6 +97,10 @@ class Migrator
 
     public function rollback(string $migration): void
     {
+        if (str_contains($migration, '..') || str_contains($migration, '/') || str_contains($migration, '\\')) {
+            throw new RuntimeException("Invalid migration name: {$migration}");
+        }
+
         $file = $this->migrationPath . '/' . $migration . '.php';
 
         if (!file_exists($file)) {

@@ -8,7 +8,6 @@ class RedisCacheDriver implements CacheDriver
 {
     protected \Redis $redis;
     protected string $prefix;
-    protected bool $connected = false;
 
     public function __construct(array $config)
     {
@@ -35,7 +34,6 @@ class RedisCacheDriver implements CacheDriver
         }
 
         $this->redis->select($database);
-        $this->connected = true;
     }
 
     public function get(string $key, mixed $default = null): mixed
@@ -46,12 +44,13 @@ class RedisCacheDriver implements CacheDriver
             return $default;
         }
 
-        return unserialize($value);
+        $data = json_decode($value, true);
+        return $data !== null ? $data : $default;
     }
 
     public function set(string $key, mixed $value, ?int $ttl = null): bool
     {
-        $serialized = serialize($value);
+        $serialized = json_encode($value);
 
         if ($ttl !== null) {
             return $this->redis->setex($this->prefix($key), $ttl, $serialized);

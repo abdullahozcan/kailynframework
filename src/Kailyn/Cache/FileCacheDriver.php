@@ -130,7 +130,7 @@ class FileCacheDriver implements CacheDriver
             return null;
         }
 
-        $data = unserialize($content);
+        $data = json_decode($content, true);
 
         if (!is_array($data) || !array_key_exists('value', $data)) {
             return null;
@@ -143,6 +143,6 @@ class FileCacheDriver implements CacheDriver
     {
         $path = $this->path($key);
 
-        return file_put_contents($path, serialize($data), LOCK_EX) !== false;
+        return file_put_contents($path, json_encode($data), LOCK_EX) !== false;
     }
 }

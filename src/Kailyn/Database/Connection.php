@@ -10,6 +10,7 @@ class Connection
 {
     protected PDO $pdo;
     protected string $name;
+    protected string $driver;
     protected string $tablePrefix = '';
     protected int $fetchMode = PDO::FETCH_OBJ;
     protected array $queryLog = [];
@@ -24,9 +25,9 @@ class Connection
 
     protected function connect(array $config): void
     {
-        $driver = $config['driver'] ?? 'sqlite';
+        $this->driver = $config['driver'] ?? 'sqlite';
 
-        $this->pdo = match ($driver) {
+        $this->pdo = match ($this->driver) {
             'sqlite' => $this->connectSqlite($config),
             'mysql' => $this->connectMysql($config),
             'pgsql' => $this->connectPgsql($config),
@@ -167,6 +168,11 @@ class Connection
     public function getQueryLog(): array
     {
         return $this->queryLog;
+    }
+
+    public function getDriverName(): string
+    {
+        return $this->driver;
     }
 
     public function getPdo(): PDO
