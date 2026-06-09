@@ -80,7 +80,7 @@ class AuthController
         $existing = User::where('email', '=', $data['email'])->first();
 
         if ($existing) {
-            session()->flash('error', 'An account with this email already exists.');
+            session()->flash('error', 'Registration failed. Please check your information.');
             session()->flash('old', $data);
             return Response::redirect('/register');
         }

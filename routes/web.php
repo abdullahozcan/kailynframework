@@ -13,7 +13,7 @@ $router->get('/', function (Kailyn\Template\Engine $view) {
 });
 
 $router->get('/hello/{name}', function (string $name) {
-    return "Hello, {$name}!";
+    return 'Hello, ' . htmlspecialchars($name, ENT_QUOTES, 'UTF-8') . '!';
 });
 
 $router->get('/json', function () {
@@ -31,9 +31,9 @@ $router->get('/design', function (Kailyn\Template\Engine $view) {
 // ---- Auth Routes (Guest) ----
 
 $router->get('/login', [App\Controllers\AuthController::class, 'showLoginForm']);
-$router->post('/login', [App\Controllers\AuthController::class, 'login']);
+$router->middleware(['throttle'])->post('/login', [App\Controllers\AuthController::class, 'login']);
 $router->get('/register', [App\Controllers\AuthController::class, 'showRegisterForm']);
-$router->post('/register', [App\Controllers\AuthController::class, 'register']);
+$router->middleware(['throttle'])->post('/register', [App\Controllers\AuthController::class, 'register']);
 
 // ---- Auth Routes (Protected) ----
 

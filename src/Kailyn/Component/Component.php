@@ -2,6 +2,7 @@
 
 namespace Kailyn\Component;
 
+use Kailyn\Component\Attributes\Action;
 use Kailyn\Component\Attributes\Computed;
 use Kailyn\Component\Attributes\Reactive;
 use Kailyn\Container\Container;
@@ -15,6 +16,7 @@ abstract class Component
     private string $componentId;
     private array $reactiveProps = [];
     private array $computedMethods = [];
+    private array $actionMethods = [];
     private array $computedCache = [];
     protected Container $container;
     protected Engine $engine;
@@ -125,6 +127,11 @@ abstract class Component
         return $this->componentId;
     }
 
+    public function getActionMethods(): array
+    {
+        return $this->actionMethods;
+    }
+
     public function getState(): array
     {
         $state = [];
@@ -188,9 +195,18 @@ abstract class Component
             throw new \RuntimeException("Method {$method} not found on component " . static::class);
         }
 
-        $this->calling($method, $params);
+        if (!in_array($method, $this->actionMethods, true)) {
+            throw new \RuntimeException("Method {$method} is not an action on component " . static::class);
+        }
 
         $ref = new \ReflectionMethod($this, $method);
+
+        if (!$ref->isPublic()) {
+            throw new \RuntimeException("Method {$method} is not public on component " . static::class);
+        }
+
+        $this->calling($method, $params);
+
         $namedParams = [];
         $paramIndex = 0;
 
@@ -278,6 +294,9 @@ abstract class Component
         foreach ($ref->getMethods(ReflectionMethod::IS_PUBLIC) as $method) {
             if (!empty($method->getAttributes(Computed::class))) {
                 $this->computedMethods[] = $method->getName();
+            }
+            if (!empty($method->getAttributes(Action::class))) {
+                $this->actionMethods[] = $method->getName();
             }
         }
     }

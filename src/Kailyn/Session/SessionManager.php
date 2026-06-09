@@ -14,11 +14,26 @@ class SessionManager
         }
 
         if (session_status() === PHP_SESSION_NONE) {
+            $this->configureCookie();
             session_start();
         }
 
         $this->started = true;
         $this->loadFlash();
+    }
+
+    private function configureCookie(): void
+    {
+        $secure = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || $_SERVER['SERVER_PORT'] ?? 443 == 443;
+
+        session_set_cookie_params([
+            'lifetime' => 0,
+            'path' => '/',
+            'domain' => '',
+            'secure' => $secure,
+            'httponly' => true,
+            'samesite' => 'Lax',
+        ]);
     }
 
     public function set(string $key, mixed $value): void

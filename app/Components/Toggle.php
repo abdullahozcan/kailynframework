@@ -2,6 +2,7 @@
 
 namespace App\Components;
 
+use Kailyn\Component\Attributes\Action;
 use Kailyn\Component\Attributes\Reactive;
 use Kailyn\Component\Component;
 
@@ -12,6 +13,7 @@ class Toggle extends Component
 
     public string $label = 'Toggle';
 
+    #[Action]
     public function toggle(): void
     {
         $this->on = !$this->on;

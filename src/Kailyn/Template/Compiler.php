@@ -42,8 +42,8 @@ class Compiler
             '/@endfor/' => '<?php endfor; ?>',
             '/@while\s*\((.*)\)/' => '<?php while ($1): ?>',
             '/@endwhile/' => '<?php endwhile; ?>',
-            '/@continue(?:\s*\((.*)\))?/' => '<?php if (isset($1) && !($1)): ?>',
-            '/@break(?:\s*\((.*)\))?/' => '<?php if (isset($1) && !($1)): ?>',
+            '/@continue(?:\s*\((.*)\))?/' => '<?php if (!(isset($1) && !($1))): continue; endif; ?>',
+            '/@break(?:\s*\((.*)\))?/' => '<?php if (!(isset($1) && !($1))): break; endif; ?>',
 
             // Conditionals
             '/@unless\s*\((.*)\)/' => '<?php if (!($1)): ?>',
@@ -74,7 +74,7 @@ class Compiler
             '/@includeWhen\s*\(\s*(.+?)\s*,\s*\'([^\']+)\'\s*(?:,\s*(.+))?\)/' => '<?php if ($1): ?><?php echo $__env->include(\'$2\', $3 ?? []); ?><?php endif; ?>',
 
             // JSON
-            '/@json\s*\((.*)\)/' => '<?php echo json_encode($1, JSON_UNESCAPED_UNICODE); ?>',
+            '/@json\s*\((.*)\)/' => '<?php echo json_encode($1, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>',
 
             // Debug
             '/@dd\s*\((.*)\)/' => '<?php dd($1); ?>',

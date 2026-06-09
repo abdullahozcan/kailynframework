@@ -87,10 +87,13 @@ class Application extends Container
         $this->middleware = [
             'auth' => \App\Middleware\AuthMiddleware::class,
             'guest' => \App\Middleware\GuestMiddleware::class,
+            'csrf' => \App\Middleware\CsrfMiddleware::class,
+            'security-headers' => \App\Middleware\SecurityHeadersMiddleware::class,
+            'throttle' => \App\Middleware\ThrottleMiddleware::class,
         ];
 
         $this->middlewareGroups = [
-            'web' => [],
+            'web' => ['csrf', 'security-headers'],
         ];
     }
 

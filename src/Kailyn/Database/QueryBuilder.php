@@ -332,35 +332,40 @@ class QueryBuilder
 
     public function count(string $column = '*'): int
     {
-        $this->columns = ["COUNT({$column}) as aggregate"];
+        $col = $this->validateColumn($column);
+        $this->columns = ["COUNT({$col}) as aggregate"];
         $result = $this->first();
         return (int) ($result->aggregate ?? 0);
     }
 
     public function avg(string $column): float
     {
-        $this->columns = ["AVG({$column}) as aggregate"];
+        $col = $this->validateColumn($column);
+        $this->columns = ["AVG({$col}) as aggregate"];
         $result = $this->first();
         return (float) ($result->aggregate ?? 0);
     }
 
     public function sum(string $column): float
     {
-        $this->columns = ["SUM({$column}) as aggregate"];
+        $col = $this->validateColumn($column);
+        $this->columns = ["SUM({$col}) as aggregate"];
         $result = $this->first();
         return (float) ($result->aggregate ?? 0);
     }
 
     public function min(string $column): float
     {
-        $this->columns = ["MIN({$column}) as aggregate"];
+        $col = $this->validateColumn($column);
+        $this->columns = ["MIN({$col}) as aggregate"];
         $result = $this->first();
         return (float) ($result->aggregate ?? 0);
     }
 
     public function max(string $column): float
     {
-        $this->columns = ["MAX({$column}) as aggregate"];
+        $col = $this->validateColumn($column);
+        $this->columns = ["MAX({$col}) as aggregate"];
         $result = $this->first();
         return (float) ($result->aggregate ?? 0);
     }
@@ -553,6 +558,14 @@ class QueryBuilder
         }
 
         return implode(' ', $parts);
+    }
+
+    protected function validateColumn(string $column): string
+    {
+        if (preg_match('/^[a-zA-Z_][a-zA-Z0-9_.*]*$/', $column)) {
+            return $column;
+        }
+        throw new \RuntimeException("Invalid column name: {$column}");
     }
 
     protected function getWhereBindings(): array

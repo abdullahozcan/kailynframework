@@ -26,6 +26,7 @@ class Response
 
     public static function redirect(string $url, int $status = 302, array $headers = []): static
     {
+        $url = str_replace(["\r", "\n"], '', $url);
         return new static('', $status, array_merge(['Location' => $url], $headers));
     }
 

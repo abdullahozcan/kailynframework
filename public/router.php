@@ -2,7 +2,9 @@
 
 $uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 
-if ($uri !== '/' && file_exists(__DIR__ . $uri)) {
+$realFile = realpath(__DIR__ . $uri);
+
+if ($uri !== '/' && $realFile !== false && str_starts_with($realFile, __DIR__ . DIRECTORY_SEPARATOR)) {
     return false;
 }
 

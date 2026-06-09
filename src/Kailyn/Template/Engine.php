@@ -23,6 +23,7 @@ class Engine
 
     public function render(string $view, array $data = []): string
     {
+        $this->validateViewName($view);
         $this->sections = [];
         $this->sectionStack = [];
         $this->layout = null;
@@ -32,11 +33,12 @@ class Engine
 
     public function renderPartial(string $view, array $data = []): string
     {
+        $this->validateViewName($view);
         $sections = $this->sections;
         $stack = $this->sectionStack;
         $layout = $this->layout;
 
-        $result = $this->renderRawContent($view, $data);
+        $result = $this->renderRaw($view, $data);
 
         $this->sections = $sections;
         $this->sectionStack = $stack;
@@ -50,7 +52,7 @@ class Engine
         $compiled = $this->getCompiled($view);
         $__env = $this;
 
-        extract($data);
+        extract($data, EXTR_SKIP);
 
         ob_start();
         require $compiled;
@@ -67,25 +69,13 @@ class Engine
         return $content;
     }
 
-    public function renderRawContent(string $view, array $data): string
-    {
-        $compiled = $this->getCompiled($view);
-        $__env = $this;
-
-        extract($data);
-
-        ob_start();
-        require $compiled;
-
-        return ob_get_clean();
-    }
-
     protected function renderLayout(string $layout, array $data): string
     {
+        $this->validateViewName($layout);
         $compiled = $this->getCompiled($layout);
         $__env = $this;
 
-        extract($data);
+        extract($data, EXTR_SKIP);
 
         ob_start();
         require $compiled;
@@ -150,11 +140,13 @@ class Engine
 
     public function include(string $view, array $data = []): string
     {
+        $this->validateViewName($view);
         return $this->render($view, array_merge($this->shared, $data));
     }
 
     public function includeIf(string $view, array $data = []): string
     {
+        $this->validateViewName($view);
         $path = $this->findView($view);
 
         if ($path === null) {
@@ -166,6 +158,7 @@ class Engine
 
     public function exists(string $view): bool
     {
+        $this->validateViewName($view);
         return $this->findView($view) !== null;
     }
 
@@ -192,6 +185,13 @@ class Engine
             throw new RuntimeException("View [{$view}] not found");
         }
 
+        $realRoot = realpath($this->viewPath);
+        $realPath = realpath($path);
+
+        if ($realRoot === false || $realPath === false || !str_starts_with($realPath, $realRoot)) {
+            throw new RuntimeException("View [{$view}] not accessible");
+        }
+
         $cacheFile = $this->cachePath . '/' . md5($view) . '.php';
 
         if (!is_dir($this->cachePath)) {
@@ -208,6 +208,13 @@ class Engine
         file_put_contents($cacheFile, $compiled, LOCK_EX);
 
         return $cacheFile;
+    }
+
+    protected function validateViewName(string $view): void
+    {
+        if (str_contains($view, '..') || str_contains($view, '/') || str_contains($view, '\\')) {
+            throw new RuntimeException("Invalid view name: {$view}");
+        }
     }
 
     protected function findView(string $view): ?string

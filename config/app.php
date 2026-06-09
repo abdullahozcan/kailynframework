@@ -3,6 +3,6 @@
 return [
     'name' => 'Kailyn',
     'env' => 'development',
-    'debug' => true,
+    'debug' => env('APP_DEBUG', false),
     'url' => 'http://localhost:8000',
 ];

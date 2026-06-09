@@ -2,6 +2,8 @@
 
 namespace App\Components;
 
+use Kailyn\Component\Attributes\Action;
+use Kailyn\Component\Attributes\Computed;
 use Kailyn\Component\Attributes\Reactive;
 use Kailyn\Component\Component;
 
@@ -22,11 +24,13 @@ class DatePicker extends Component
         $this->month = (int) date('m');
     }
 
+    #[Action]
     public function selectDate(string $date): void
     {
         $this->selected = $date;
     }
 
+    #[Action]
     public function prevMonth(): void
     {
         $this->month--;
@@ -36,6 +40,7 @@ class DatePicker extends Component
         }
     }
 
+    #[Action]
     public function nextMonth(): void
     {
         $this->month++;
@@ -45,6 +50,7 @@ class DatePicker extends Component
         }
     }
 
+    #[Computed]
     public function getCalendarProperty(): array
     {
         $firstDay = mktime(0, 0, 0, $this->month, 1, $this->year);

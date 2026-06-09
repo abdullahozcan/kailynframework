@@ -365,7 +365,7 @@ class Schema
         if (array_key_exists('default', $column)) {
             $default = $column['default'];
             if (is_string($default)) {
-                $default = "'{$default}'";
+                $default = "'" . addslashes($default) . "'";
             } elseif ($default === null) {
                 $default = 'NULL';
             }

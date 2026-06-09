@@ -2,6 +2,7 @@
 
 namespace App\Components;
 
+use Kailyn\Component\Attributes\Action;
 use Kailyn\Component\Attributes\Reactive;
 use Kailyn\Component\Component;
 
@@ -33,21 +34,25 @@ class Counter extends Component
         // logged via watcher
     }
 
+    #[Action]
     public function increment(): void
     {
         $this->count++;
     }
 
+    #[Action]
     public function decrement(): void
     {
         $this->count--;
     }
 
+    #[Action]
     public function reset(): void
     {
         $this->count = 0;
     }
 
+    #[Action]
     public function add(int $amount): void
     {
         $this->count += $amount;

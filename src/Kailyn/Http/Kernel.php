@@ -33,7 +33,10 @@ class Kernel
             $request = $this->resolveMethodOverride($request);
             $route = $this->router->dispatch($request);
 
-            $this->routeMiddleware = $route['middleware'] ?? [];
+            $this->routeMiddleware = array_merge(
+                $route['middleware'] ?? [],
+                $this->resolveGlobalMiddleware($request)
+            );
 
             $response = $this->runMiddleware($request, function (Request $request) use ($route) {
                 return $this->resolveHandler($route['handler'], $route['params'], $request);
@@ -86,6 +89,19 @@ class Kernel
         }
 
         return $next($request);
+    }
+
+    protected function resolveGlobalMiddleware(Request $request): array
+    {
+        $middleware = [];
+
+        if (isset($this->middlewareGroups['web'])) {
+            foreach ($this->middlewareGroups['web'] as $name) {
+                $middleware[] = $name;
+            }
+        }
+
+        return $middleware;
     }
 
     protected function resolveMiddlewarePipeline(Request $request): array

@@ -34,11 +34,7 @@ class ComponentManager
 
         $instance->mount($props);
 
-        foreach ($props as $key => $value) {
-            if (property_exists($instance, $key)) {
-                $instance->$key = $value;
-            }
-        }
+        $instance->setState($props);
 
         $instance->boot();
 
@@ -57,8 +53,22 @@ class ComponentManager
             return Response::json(['error' => 'Invalid request'], 400);
         }
 
+        if (!is_array($state)) {
+            return Response::json(['error' => 'Invalid state'], 400);
+        }
+
+        if (!is_string($method) || preg_match('/[^a-zA-Z0-9_]/', $method)) {
+            return Response::json(['error' => 'Invalid method'], 400);
+        }
+
         $instance = $this->make($componentName);
+
         $instance->hydrate($state);
+
+        if (!in_array($method, $instance->getActionMethods(), true)) {
+            return Response::json(['error' => 'Method not allowed'], 403);
+        }
+
         $result = $instance->callMethod($method, $body['params'] ?? []);
 
         return Response::json([

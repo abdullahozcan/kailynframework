@@ -60,7 +60,9 @@ abstract class Model implements ArrayAccess, JsonSerializable
     public function forceFill(array $attributes): static
     {
         foreach ($attributes as $key => $value) {
-            $this->attributes[$key] = $value;
+            if ($this->isFillable($key)) {
+                $this->attributes[$key] = $value;
+            }
         }
 
         return $this;
@@ -258,7 +260,9 @@ abstract class Model implements ArrayAccess, JsonSerializable
 
     public function __set(string $key, mixed $value): void
     {
-        $this->attributes[$key] = $value;
+        if ($this->isFillable($key)) {
+            $this->attributes[$key] = $value;
+        }
     }
 
     public function __isset(string $key): bool
@@ -282,7 +286,9 @@ abstract class Model implements ArrayAccess, JsonSerializable
 
     public function offsetSet(mixed $offset, mixed $value): void
     {
-        $this->attributes[$offset] = $value;
+        if ($this->isFillable($offset)) {
+            $this->attributes[$offset] = $value;
+        }
     }
 
     public function offsetUnset(mixed $offset): void

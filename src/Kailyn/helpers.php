@@ -3,7 +3,7 @@
 if (!function_exists('env')) {
     function env(string $key, mixed $default = null): mixed
     {
-        return $_ENV[$key] ?? getenv($key) ?: $default;
+        return $_ENV[$key] ?? getenv($key) ?? $default;
     }
 }
 
@@ -80,6 +80,12 @@ if (!function_exists('back')) {
     function back(): Kailyn\Http\Response
     {
         $referer = $_SERVER['HTTP_REFERER'] ?? '/';
+        $referer = str_replace(["\r", "\n"], '', $referer);
+
+        if (!str_starts_with($referer, '/') && !str_starts_with($referer, 'http')) {
+            $referer = '/';
+        }
+
         return Kailyn\Http\Response::redirect($referer);
     }
 }
