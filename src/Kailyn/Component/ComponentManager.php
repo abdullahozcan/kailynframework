@@ -32,6 +32,8 @@ class ComponentManager
         $class = $this->resolveClass($name);
         $instance = $this->container->make($class);
 
+        $instance->mount($props);
+
         foreach ($props as $key => $value) {
             if (property_exists($instance, $key)) {
                 $instance->$key = $value;

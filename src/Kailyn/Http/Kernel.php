@@ -8,23 +8,44 @@ use RuntimeException;
 
 class Kernel
 {
+    protected array $middleware = [];
+    protected array $middlewareGroups = [];
+    protected array $routeMiddleware = [];
+
     public function __construct(
         protected Container $container,
         protected Router $router
     ) {}
+
+    public function setMiddleware(array $middleware): void
+    {
+        $this->middleware = $middleware;
+    }
+
+    public function setMiddlewareGroups(array $groups): void
+    {
+        $this->middlewareGroups = $groups;
+    }
 
     public function handle(Request $request): Response
     {
         try {
             $request = $this->resolveMethodOverride($request);
             $route = $this->router->dispatch($request);
-            return $this->resolveHandler($route['handler'], $route['params'], $request);
+
+            $this->routeMiddleware = $route['middleware'] ?? [];
+
+            $response = $this->runMiddleware($request, function (Request $request) use ($route) {
+                return $this->resolveHandler($route['handler'], $route['params'], $request);
+            });
+
+            return $response;
         } catch (RuntimeException $e) {
             if ($e->getCode() === 404) {
                 return new Response('Not Found', 404);
             }
 
-            $debug = $this->container->make(Kailyn\Config\Config::class)->get('app.debug', false);
+            $debug = $this->container->make(\Kailyn\Config\Config::class)->get('app.debug', false);
 
             if ($debug) {
                 return new Response($e->getMessage() . "\n" . $e->getTraceAsString(), 500);
@@ -32,7 +53,7 @@ class Kernel
 
             return new Response('Server Error', 500);
         } catch (\Throwable $e) {
-            $debug = $this->container->make(Kailyn\Config\Config::class)->get('app.debug', false);
+            $debug = $this->container->make(\Kailyn\Config\Config::class)->get('app.debug', false);
 
             if ($debug) {
                 return new Response($e->getMessage() . "\n" . $e->getTraceAsString(), 500);
@@ -40,6 +61,50 @@ class Kernel
 
             return new Response('Server Error', 500);
         }
+    }
+
+    protected function runMiddleware(Request $request, callable $handler): Response
+    {
+        $pipeline = $this->resolveMiddlewarePipeline($request);
+
+        if (empty($pipeline)) {
+            return $handler($request);
+        }
+
+        $pipeline = array_reverse($pipeline);
+        $next = $handler;
+
+        foreach ($pipeline as $middlewareClass) {
+            $middleware = $this->container->make($middlewareClass);
+            $current = $next;
+
+            if ($middleware instanceof Middleware) {
+                $next = function (Request $request) use ($middleware, $current) {
+                    return $middleware->handle($request, $current);
+                };
+            }
+        }
+
+        return $next($request);
+    }
+
+    protected function resolveMiddlewarePipeline(Request $request): array
+    {
+        $pipeline = [];
+
+        foreach ($this->routeMiddleware as $name) {
+            if (isset($this->middleware[$name])) {
+                $pipeline[] = $this->middleware[$name];
+            } elseif (isset($this->middlewareGroups[$name])) {
+                foreach ($this->middlewareGroups[$name] as $m) {
+                    if (isset($this->middleware[$m])) {
+                        $pipeline[] = $this->middleware[$m];
+                    }
+                }
+            }
+        }
+
+        return $pipeline;
     }
 
     protected function resolveMethodOverride(Request $request): Request

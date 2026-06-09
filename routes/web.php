@@ -3,6 +3,8 @@
 /** @var Kailyn\Foundation\Application $app */
 $router = $app->make(Kailyn\Http\Router::class);
 
+// ---- Guest Routes ----
+
 $router->get('/', function (Kailyn\Template\Engine $view) {
     return $view->render('welcome', [
         'name' => 'Kailyn',
@@ -26,7 +28,20 @@ $router->get('/design', function (Kailyn\Template\Engine $view) {
     return $view->render('design');
 });
 
-$router->post('/_kailyn/update', function (Kailyn\Http\Request $request) {
-    $manager = app(Kailyn\Component\ComponentManager::class);
-    return $manager->handleUpdate($request);
-});
+// ---- Auth Routes (Guest) ----
+
+$router->get('/login', [App\Controllers\AuthController::class, 'showLoginForm']);
+$router->post('/login', [App\Controllers\AuthController::class, 'login']);
+$router->get('/register', [App\Controllers\AuthController::class, 'showRegisterForm']);
+$router->post('/register', [App\Controllers\AuthController::class, 'register']);
+
+// ---- Auth Routes (Protected) ----
+
+$router->middleware(['auth'])->get('/dashboard', [App\Controllers\DashboardController::class, 'index']);
+$router->middleware(['auth'])->post('/logout', [App\Controllers\AuthController::class, 'logout']);
+
+// ---- Route Group Example ----
+// $router->middleware(['auth'])->group(function () use ($router) {
+//     $router->get('/dashboard', [App\Controllers\DashboardController::class, 'index']);
+//     $router->post('/logout', [App\Controllers\AuthController::class, 'logout']);
+// });

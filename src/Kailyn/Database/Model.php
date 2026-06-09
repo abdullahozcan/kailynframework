@@ -23,6 +23,9 @@ abstract class Model implements ArrayAccess, JsonSerializable
     protected array $fillable = [];
     protected array $guarded = ['*'];
     protected array $appends = [];
+    protected array $hidden = [];
+    protected array $relations = [];
+    protected array $with = [];
 
     public function __construct(array $attributes = [])
     {
@@ -114,7 +117,15 @@ abstract class Model implements ArrayAccess, JsonSerializable
     public static function all(): array
     {
         $instance = new static;
-        return $instance->newQuery()->get();
+        $results = $instance->newQuery()->get();
+        $models = [];
+
+        foreach ($results as $result) {
+            $model = (new static)->newFromBuilder($result);
+            $models[] = $model;
+        }
+
+        return $models;
     }
 
     public static function count(): int
@@ -176,6 +187,20 @@ abstract class Model implements ArrayAccess, JsonSerializable
         if ($fresh !== null) {
             $this->attributes = $fresh->attributes;
             $this->original = $fresh->original;
+            $this->relations = $fresh->relations;
+        }
+
+        return $this;
+    }
+
+    public function load(string ...$relations): static
+    {
+        if (empty($relations)) {
+            $relations = $this->with;
+        }
+
+        foreach ($relations as $relation) {
+            $this->loadRelation($relation);
         }
 
         return $this;
@@ -185,13 +210,32 @@ abstract class Model implements ArrayAccess, JsonSerializable
     {
         $attributes = $this->attributes;
 
+        foreach ($this->hidden as $key) {
+            unset($attributes[$key]);
+        }
+
         foreach ($this->appends as $append) {
             if (method_exists($this, $append)) {
                 $attributes[$append] = $this->$append();
             }
         }
 
+        foreach ($this->relations as $key => $value) {
+            if ($value instanceof Model) {
+                $attributes[$key] = $value->toArray();
+            } elseif (is_array($value)) {
+                $attributes[$key] = array_map(fn($m) => $m instanceof Model ? $m->toArray() : $m, $value);
+            } else {
+                $attributes[$key] = $value;
+            }
+        }
+
         return $attributes;
+    }
+
+    public function toJson(int $options = 0): string
+    {
+        return json_encode($this->toArray(), $options);
     }
 
     public function jsonSerialize(): mixed
@@ -201,6 +245,14 @@ abstract class Model implements ArrayAccess, JsonSerializable
 
     public function __get(string $key): mixed
     {
+        if (isset($this->relations[$key])) {
+            return $this->relations[$key];
+        }
+
+        if (method_exists($this, $key)) {
+            return $this->loadRelation($key);
+        }
+
         return $this->attributes[$key] ?? null;
     }
 
@@ -211,6 +263,10 @@ abstract class Model implements ArrayAccess, JsonSerializable
 
     public function __isset(string $key): bool
     {
+        if (isset($this->relations[$key])) {
+            return true;
+        }
+
         return isset($this->attributes[$key]);
     }
 
@@ -254,6 +310,11 @@ abstract class Model implements ArrayAccess, JsonSerializable
         return $this->attributes[$this->primaryKey] ?? null;
     }
 
+    public function getKeyName(): string
+    {
+        return $this->primaryKey;
+    }
+
     public function exists(): bool
     {
         return $this->exists;
@@ -264,12 +325,113 @@ abstract class Model implements ArrayAccess, JsonSerializable
         return $this->wasRecentlyCreated;
     }
 
+    public function getAttributes(): array
+    {
+        return $this->attributes;
+    }
+
+    public function getOriginal(): array
+    {
+        return $this->original;
+    }
+
+    public function hasGetMutator(string $key): bool
+    {
+        return method_exists($this, 'get' . str_replace('_', '', ucwords($key, '_')) . 'Attribute');
+    }
+
+    public function hasSetMutator(string $key): bool
+    {
+        return method_exists($this, 'set' . str_replace('_', '', ucwords($key, '_')) . 'Attribute');
+    }
+
+    // ---- Relationships ----
+
+    protected function hasOne(string $related, string $foreignKey = null, string $localKey = null): mixed
+    {
+        $instance = new $related;
+        $foreignKey = $foreignKey ?: $this->getForeignKey();
+        $localKey = $localKey ?: $this->primaryKey;
+
+        return $instance->where($foreignKey, '=', $this->attributes[$localKey] ?? null)->first();
+    }
+
+    protected function hasMany(string $related, string $foreignKey = null, string $localKey = null): array
+    {
+        $instance = new $related;
+        $foreignKey = $foreignKey ?: $this->getForeignKey();
+        $localKey = $localKey ?: $this->primaryKey;
+
+        return $instance->where($foreignKey, '=', $this->attributes[$localKey] ?? null)->get();
+    }
+
+    protected function belongsTo(string $related, string $foreignKey = null, string $ownerKey = null): mixed
+    {
+        $instance = new $related;
+        $foreignKey = $foreignKey ?: $this->getForeignKey();
+        $ownerKey = $ownerKey ?: (new $related)->getPrimaryKey();
+
+        return $instance->where($ownerKey, '=', $this->attributes[$foreignKey] ?? null)->first();
+    }
+
+    protected function belongsToMany(string $related, string $table = null, string $foreignPivotKey = null, string $relatedPivotKey = null): array
+    {
+        $instance = new $related;
+        $table = $table ?: $this->getPivotTableName($related);
+        $foreignPivotKey = $foreignPivotKey ?: $this->getForeignKey();
+        $relatedPivotKey = $relatedPivotKey ?: (new $related)->getForeignKey();
+
+        $localKey = $this->attributes[$this->primaryKey] ?? null;
+
+        return (new static)
+            ->newQuery()
+            ->select($instance->getTable() . '.*')
+            ->join($table, "{$table}.{$relatedPivotKey}", '=', $instance->getTable() . '.' . $instance->getPrimaryKey())
+            ->where("{$table}.{$foreignPivotKey}", '=', $localKey)
+            ->get();
+    }
+
+    protected function getForeignKey(): string
+    {
+        $class = (new \ReflectionClass($this))->getShortName();
+        return strtolower(preg_replace('/(?<!^)[A-Z]/', '_$0', $class)) . '_' . $this->primaryKey;
+    }
+
+    protected function getPivotTableName(string $related): string
+    {
+        $models = [
+            (new \ReflectionClass($this))->getShortName(),
+            (new \ReflectionClass(new $related))->getShortName(),
+        ];
+
+        sort($models);
+
+        return strtolower(implode('_', $models));
+    }
+
+    protected function loadRelation(string $relation): mixed
+    {
+        if (method_exists($this, $relation)) {
+            $this->relations[$relation] = $this->$relation();
+            return $this->relations[$relation];
+        }
+
+        return null;
+    }
+
+    // ---- Internals ----
+
     protected function newFromBuilder(object $record): static
     {
         $model = new static;
         $model->attributes = (array) $record;
         $model->original = $model->attributes;
         $model->exists = true;
+
+        if (!empty($this->with)) {
+            $model->load();
+        }
+
         return $model;
     }
 

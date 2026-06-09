@@ -1,0 +1,45 @@
+@extends('layouts.app')
+
+@section('title', 'Dashboard')
+
+@section('content')
+    <div class="flex items-center justify-between mb-8">
+        <div>
+            <h2 class="text-3xl font-bold text-gray-900">Dashboard</h2>
+            <p class="text-gray-500 mt-1">Welcome back, <span class="font-semibold text-gray-700">{{ $userName }}</span>!</p>
+        </div>
+        <form method="POST" action="/logout">
+            {{ csrf_field() }}
+            <button type="submit"
+                class="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 text-sm font-medium hover:bg-gray-50 active:bg-gray-100 transition-colors">
+                Logout
+            </button>
+        </form>
+    </div>
+
+    @if($success = session()->flash('success'))
+        <div class="mb-6 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+            {{ $success }}
+        </div>
+    @endif
+
+    <div class="grid md:grid-cols-3 gap-6 mb-8">
+        @include('partials.card', [
+            'title' => 'Users',
+            'body' => 'Manage your application users.',
+        ])
+        @include('partials.card', [
+            'title' => 'Reports',
+            'body' => 'View and generate reports.',
+        ])
+        @include('partials.card', [
+            'title' => 'Settings',
+            'body' => 'Configure application settings.',
+        ])
+    </div>
+
+    @include('partials.card', [
+        'title' => 'Recent Activity',
+        'body' => 'No recent activity to display.',
+    ])
+@endsection

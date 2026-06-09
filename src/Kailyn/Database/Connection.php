@@ -10,11 +10,15 @@ class Connection
 {
     protected PDO $pdo;
     protected string $name;
+    protected string $tablePrefix = '';
     protected int $fetchMode = PDO::FETCH_OBJ;
+    protected array $queryLog = [];
+    protected bool $loggingQueries = false;
 
     public function __construct(array $config, string $name = 'default')
     {
         $this->name = $name;
+        $this->tablePrefix = $config['prefix'] ?? '';
         $this->connect($config);
     }
 
@@ -26,6 +30,7 @@ class Connection
             'sqlite' => $this->connectSqlite($config),
             'mysql' => $this->connectMysql($config),
             'pgsql' => $this->connectPgsql($config),
+            'sqlsrv' => $this->connectSqlsrv($config),
             default => throw new RuntimeException("Unsupported driver: {$driver}"),
         };
 
@@ -62,8 +67,27 @@ class Connection
         return new PDO($dsn, $config['username'] ?? 'postgres', $config['password'] ?? '');
     }
 
+    protected function connectSqlsrv(array $config): PDO
+    {
+        $host = $config['host'] ?? '127.0.0.1';
+        $port = $config['port'] ?? '1433';
+        $database = $config['database'] ?? '';
+        $dsn = "sqlsrv:Server={$host},{$port};Database={$database}";
+
+        return new PDO($dsn, $config['username'] ?? 'sa', $config['password'] ?? '');
+    }
+
+    public function table(string $table): QueryBuilder
+    {
+        return (new QueryBuilder($this))->table($this->tablePrefix . $table);
+    }
+
     public function query(string $sql, array $bindings = []): PDOStatement
     {
+        if ($this->loggingQueries) {
+            $this->queryLog[] = ['sql' => $sql, 'bindings' => $bindings, 'time' => microtime(true)];
+        }
+
         $statement = $this->pdo->prepare($sql);
         $statement->execute($bindings);
 
@@ -134,6 +158,17 @@ class Connection
         }
     }
 
+    public function pretend(): static
+    {
+        $this->loggingQueries = true;
+        return $this;
+    }
+
+    public function getQueryLog(): array
+    {
+        return $this->queryLog;
+    }
+
     public function getPdo(): PDO
     {
         return $this->pdo;
@@ -142,6 +177,11 @@ class Connection
     public function getName(): string
     {
         return $this->name;
+    }
+
+    public function getTablePrefix(): string
+    {
+        return $this->tablePrefix;
     }
 
     public function setFetchMode(int $mode): void

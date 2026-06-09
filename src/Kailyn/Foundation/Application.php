@@ -16,6 +16,8 @@ class Application extends Container
 {
     private string $basePath;
     private bool $booted = false;
+    private array $middleware = [];
+    private array $middlewareGroups = [];
 
     public function __construct(string $basePath)
     {
@@ -36,7 +38,11 @@ class Application extends Container
         $this->booted = true;
 
         $this->singleton(Config::class, fn() => new Config($this->configPath()));
-        $this->singleton(Router::class);
+        $this->singleton(Router::class, function () {
+            $router = new Router;
+            $router->addInternalRoutes();
+            return $router;
+        });
         $this->singleton(SessionManager::class);
         $this->singleton(ComponentManager::class, fn() => new ComponentManager(
             $this,
@@ -46,6 +52,8 @@ class Application extends Container
             $this->viewPath(),
             $this->storagePath('views')
         ));
+
+        $this->registerMiddleware();
     }
 
     public function run(): void
@@ -55,6 +63,9 @@ class Application extends Container
         $this->loadRoutes();
 
         $kernel = new Kernel($this, $this->make(Router::class));
+        $kernel->setMiddleware($this->middleware);
+        $kernel->setMiddlewareGroups($this->middlewareGroups);
+
         $request = Request::capture();
         $response = $kernel->handle($request);
         $response->send();
@@ -69,6 +80,33 @@ class Application extends Container
             $app = $this;
             require $routesFile;
         }
+    }
+
+    protected function registerMiddleware(): void
+    {
+        $this->middleware = [
+            'auth' => \App\Middleware\AuthMiddleware::class,
+            'guest' => \App\Middleware\GuestMiddleware::class,
+        ];
+
+        $this->middlewareGroups = [
+            'web' => [],
+        ];
+    }
+
+    public function addMiddleware(string $name, string $class): void
+    {
+        $this->middleware[$name] = $class;
+    }
+
+    public function getMiddleware(string $name): ?string
+    {
+        return $this->middleware[$name] ?? null;
+    }
+
+    public function getMiddlewareGroup(string $name): array
+    {
+        return $this->middlewareGroups[$name] ?? [];
     }
 
     public function basePath(?string $path = null): string

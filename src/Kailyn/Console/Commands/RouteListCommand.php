@@ -19,7 +19,7 @@ class RouteListCommand extends Command
             $router = $app->make(Router::class);
             $app->instance(Router::class, $router);
             require $routesFile;
-            $routes = $router->getRoutes();
+            $routes = $router->getPublicRoutes();
         } else {
             $routes = [];
         }

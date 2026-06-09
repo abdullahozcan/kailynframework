@@ -11,9 +11,12 @@ class QueryBuilder
     protected array $bindings = [];
     protected array $joins = [];
     protected array $orders = [];
+    protected array $havings = [];
+    protected array $havingBindings = [];
     protected ?int $limit = null;
     protected ?int $offset = null;
     protected ?string $lock = null;
+    protected array $groups = [];
 
     public function __construct(Connection $connection)
     {
@@ -63,10 +66,10 @@ class QueryBuilder
         return $this->where($column, $operator, $value, 'or');
     }
 
-    public function whereIn(string $column, array $values, string $boolean = 'and'): static
+    public function whereIn(string $column, array $values, string $boolean = 'and', bool $not = false): static
     {
         $this->wheres[] = [
-            'type' => 'in',
+            'type' => $not ? 'not-in' : 'in',
             'column' => $column,
             'values' => $values,
             'boolean' => $boolean,
@@ -75,6 +78,11 @@ class QueryBuilder
         $this->bindings = array_merge($this->bindings, $values);
 
         return $this;
+    }
+
+    public function whereNotIn(string $column, array $values, string $boolean = 'and'): static
+    {
+        return $this->whereIn($column, $values, $boolean, true);
     }
 
     public function whereNull(string $column, string $boolean = 'and'): static
@@ -93,6 +101,43 @@ class QueryBuilder
         $this->wheres[] = [
             'type' => 'notnull',
             'column' => $column,
+            'boolean' => $boolean,
+        ];
+
+        return $this;
+    }
+
+    public function whereBetween(string $column, array $values, string $boolean = 'and', bool $not = false): static
+    {
+        $this->wheres[] = [
+            'type' => $not ? 'not-between' : 'between',
+            'column' => $column,
+            'values' => $values,
+            'boolean' => $boolean,
+        ];
+
+        $this->bindings = array_merge($this->bindings, $values);
+
+        return $this;
+    }
+
+    public function whereNotBetween(string $column, array $values, string $boolean = 'and'): static
+    {
+        return $this->whereBetween($column, $values, $boolean, true);
+    }
+
+    public function whereColumn(string $first, string $operator, ?string $second = null, string $boolean = 'and'): static
+    {
+        if ($second === null) {
+            $second = $operator;
+            $operator = '=';
+        }
+
+        $this->wheres[] = [
+            'type' => 'column',
+            'first' => $first,
+            'operator' => $operator,
+            'second' => $second,
             'boolean' => $boolean,
         ];
 
@@ -135,6 +180,37 @@ class QueryBuilder
     public function orderByDesc(string $column): static
     {
         return $this->orderBy($column, 'desc');
+    }
+
+    public function inRandomOrder(): static
+    {
+        $this->orders[] = [
+            'type' => 'raw',
+            'sql' => 'RANDOM()',
+        ];
+
+        return $this;
+    }
+
+    public function groupBy(mixed ...$groups): static
+    {
+        $this->groups = array_merge($this->groups, $groups);
+        return $this;
+    }
+
+    public function having(string $column, string $operator, mixed $value, string $boolean = 'and'): static
+    {
+        $this->havings[] = [
+            'type' => 'basic',
+            'column' => $column,
+            'operator' => $operator,
+            'value' => $value,
+            'boolean' => $boolean,
+        ];
+
+        $this->havingBindings[] = $value;
+
+        return $this;
     }
 
     public function limit(int $limit): static
@@ -180,10 +256,22 @@ class QueryBuilder
             $sql .= ' WHERE ' . $this->buildWhereClause();
         }
 
+        if (!empty($this->groups)) {
+            $sql .= ' GROUP BY ' . implode(', ', $this->groups);
+        }
+
+        if (!empty($this->havings)) {
+            $sql .= ' HAVING ' . $this->buildHavingClause();
+        }
+
         if (!empty($this->orders)) {
             $orders = [];
             foreach ($this->orders as $order) {
-                $orders[] = "{$order['column']} {$order['direction']}";
+                if (isset($order['type']) && $order['type'] === 'raw') {
+                    $orders[] = $order['sql'];
+                } else {
+                    $orders[] = "{$order['column']} {$order['direction']}";
+                }
             }
             $sql .= ' ORDER BY ' . implode(', ', $orders);
         }
@@ -249,9 +337,42 @@ class QueryBuilder
         return (int) ($result->aggregate ?? 0);
     }
 
+    public function avg(string $column): float
+    {
+        $this->columns = ["AVG({$column}) as aggregate"];
+        $result = $this->first();
+        return (float) ($result->aggregate ?? 0);
+    }
+
+    public function sum(string $column): float
+    {
+        $this->columns = ["SUM({$column}) as aggregate"];
+        $result = $this->first();
+        return (float) ($result->aggregate ?? 0);
+    }
+
+    public function min(string $column): float
+    {
+        $this->columns = ["MIN({$column}) as aggregate"];
+        $result = $this->first();
+        return (float) ($result->aggregate ?? 0);
+    }
+
+    public function max(string $column): float
+    {
+        $this->columns = ["MAX({$column}) as aggregate"];
+        $result = $this->first();
+        return (float) ($result->aggregate ?? 0);
+    }
+
     public function exists(): bool
     {
         return $this->count() > 0;
+    }
+
+    public function doesntExist(): bool
+    {
+        return !$this->exists();
     }
 
     public function insert(array $values): bool
@@ -277,6 +398,12 @@ class QueryBuilder
         }
 
         return $this->connection->insert($sql, $bindings);
+    }
+
+    public function insertGetId(array $values, string $sequence = null): string
+    {
+        $this->insert($values);
+        return $this->connection->lastInsertId();
     }
 
     public function update(array $values): int
@@ -315,10 +442,75 @@ class QueryBuilder
         return $this->connection->statement("TRUNCATE TABLE {$this->table}");
     }
 
+    public function chunk(int $size, callable $callback): bool
+    {
+        $page = 1;
+
+        do {
+            $results = $this->forPage($page, $size)->get();
+
+            if (count($results) === 0) {
+                return true;
+            }
+
+            $callback($results, $page);
+
+            $page++;
+        } while (count($results) === $size);
+
+        return true;
+    }
+
+    public function forPage(int $page, int $perPage = 15): static
+    {
+        return $this->offset(($page - 1) * $perPage)->limit($perPage);
+    }
+
+    public function paginate(int $perPage = 15, string $pageName = 'page'): array
+    {
+        $page = max(1, (int) ($_GET[$pageName] ?? 1));
+        $total = $this->count();
+
+        $this->forPage($page, $perPage);
+        $items = $this->get();
+
+        return [
+            'items' => $items,
+            'total' => $total,
+            'perPage' => $perPage,
+            'currentPage' => $page,
+            'lastPage' => (int) ceil($total / $perPage),
+            'from' => (($page - 1) * $perPage) + 1,
+            'to' => min($page * $perPage, $total),
+        ];
+    }
+
+    public function dd(): void
+    {
+        $sql = $this->toSql();
+        $bindings = $this->bindings;
+
+        dump(compact('sql', 'bindings'));
+
+        die();
+    }
+
+    public function dump(): static
+    {
+        $sql = $this->toSql();
+        $bindings = $this->bindings;
+
+        dump(compact('sql', 'bindings'));
+
+        return $this;
+    }
+
     public function newQuery(): static
     {
         $builder = new static($this->connection);
-        $builder->table($this->table);
+        if (!empty($this->table)) {
+            $builder->table($this->table);
+        }
         return $builder;
     }
 
@@ -333,12 +525,30 @@ class QueryBuilder
             $part = match ($where['type']) {
                 'basic' => "{$where['column']} {$where['operator']} ?",
                 'in' => "{$where['column']} IN (" . implode(', ', array_fill(0, count($where['values']), '?')) . ')',
+                'not-in' => "{$where['column']} NOT IN (" . implode(', ', array_fill(0, count($where['values']), '?')) . ')',
                 'null' => "{$where['column']} IS NULL",
                 'notnull' => "{$where['column']} IS NOT NULL",
+                'between' => "{$where['column']} BETWEEN ? AND ?",
+                'not-between' => "{$where['column']} NOT BETWEEN ? AND ?",
+                'column' => "{$where['first']} {$where['operator']} {$where['second']}",
                 default => '',
             };
 
             $parts[] = $boolean . $part;
+            $first = false;
+        }
+
+        return implode(' ', $parts);
+    }
+
+    protected function buildHavingClause(): string
+    {
+        $parts = [];
+        $first = true;
+
+        foreach ($this->havings as $having) {
+            $boolean = $first ? '' : strtoupper($having['boolean']) . ' ';
+            $parts[] = $boolean . "{$having['column']} {$having['operator']} ?";
             $first = false;
         }
 
@@ -350,9 +560,9 @@ class QueryBuilder
         $bindings = [];
 
         foreach ($this->wheres as $where) {
-            if ($where['type'] === 'basic' && isset($where['value'])) {
+            if (in_array($where['type'], ['basic', 'column']) && isset($where['value'])) {
                 $bindings[] = $where['value'];
-            } elseif ($where['type'] === 'in') {
+            } elseif (in_array($where['type'], ['in', 'not-in', 'between', 'not-between'])) {
                 $bindings = array_merge($bindings, $where['values']);
             }
         }
