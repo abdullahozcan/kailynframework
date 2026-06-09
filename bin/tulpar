@@ -1,0 +1,12 @@
+#!/usr/bin/env php
+<?php
+
+define('KAILYN_START', microtime(true));
+
+require_once __DIR__ . '/../vendor/autoload.php';
+
+$app = require __DIR__ . '/../bootstrap/app.php';
+
+$kernel = new Kailyn\Console\Kernel($app);
+
+exit($kernel->handle());

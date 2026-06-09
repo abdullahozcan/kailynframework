@@ -1,0 +1,18 @@
+@extends('layouts.app')
+
+@section('title', 'Home')
+
+@section('content')
+    <h2>Welcome to Kailyn</h2>
+    <p>Hello, {{ $name ?? 'World' }}!</p>
+
+    @if(isset($items) && count($items) > 0)
+        <ul>
+        @foreach($items as $item)
+            <li>{{ $item }}</li>
+        @endforeach
+        </ul>
+    @else
+        <p>No items.</p>
+    @endif
+@endsection

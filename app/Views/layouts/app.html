@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>@yield('title', 'Kailyn')</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        body { font-family: system-ui, -apple-system, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; line-height: 1.6; }
+        header { border-bottom: 2px solid #e2e8f0; margin-bottom: 20px; }
+        footer { border-top: 2px solid #e2e8f0; margin-top: 40px; padding-top: 20px; color: #64748b; }
+        .counter { padding: 20px; border: 1px solid #e2e8f0; border-radius: 8px; }
+        .counter h2 { margin-top: 0; }
+        .actions { margin: 10px 0; }
+        .actions button { margin-right: 8px; padding: 8px 16px; border: 1px solid #cbd5e1; border-radius: 4px; background: #f8fafc; cursor: pointer; }
+        .actions button:hover { background: #e2e8f0; }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Kailyn Framework</h1>
+    </header>
+
+    <main>
+        @yield('content')
+    </main>
+
+    <footer>
+        <p>&copy; 2026 Kailyn</p>
+    </footer>
+
+    <script src="/js/kailyn.js"></script>
+</body>
+</html>

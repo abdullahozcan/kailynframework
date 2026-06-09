@@ -1,0 +1,16 @@
+<div class="counter">
+    <h2>Counter: <span k-text="count">{{ $count }}</span></h2>
+
+    <div class="actions">
+        <button k-on:click="decrement">-</button>
+        <button k-on:click="reset">Reset</button>
+        <button k-on:click="increment">+</button>
+    </div>
+
+    <div class="actions">
+        <button k-on:click="add(5)">+5</button>
+        <button k-on:click="add(10)">+10</button>
+    </div>
+
+    <p>Double value: {{ $count * 2 }}</p>
+</div>
