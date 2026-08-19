@@ -95,6 +95,10 @@ abstract class Model implements ArrayAccess, JsonSerializable
             return null;
         }
 
+        if ($result instanceof static) {
+            return $result;
+        }
+
         return $instance->newFromBuilder($result);
     }
 
@@ -123,8 +127,12 @@ abstract class Model implements ArrayAccess, JsonSerializable
         $models = [];
 
         foreach ($results as $result) {
-            $model = (new static)->newFromBuilder($result);
-            $models[] = $model;
+            if ($result instanceof static) {
+                $models[] = $result;
+                continue;
+            }
+
+            $models[] = (new static)->newFromBuilder($result);
         }
 
         return $models;
@@ -425,6 +433,11 @@ abstract class Model implements ArrayAccess, JsonSerializable
         return null;
     }
 
+    public static function hydrateRecord(object $record): static
+    {
+        return (new static)->newFromBuilder($record);
+    }
+
     // ---- Internals ----
 
     protected function newFromBuilder(object $record): static
@@ -499,6 +512,7 @@ abstract class Model implements ArrayAccess, JsonSerializable
     {
         $builder = new QueryBuilder(static::resolveConnection());
         $builder->table($this->getTable());
+        $builder->forModel(static::class);
         return $builder;
     }
 }

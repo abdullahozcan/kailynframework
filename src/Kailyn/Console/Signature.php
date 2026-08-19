@@ -103,10 +103,17 @@ class Signature
 
         if (str_contains($token, '=')) {
             [$name, $default] = explode('=', $token, 2);
-            $default = $this->castDefault($default);
-            $mode = $default !== null
-                ? InputOption::VALUE_OPTIONAL
-                : InputOption::VALUE_REQUIRED;
+
+            if ($default === '') {
+                $name = rtrim($name, '=');
+                $default = null;
+                $mode = InputOption::VALUE_REQUIRED;
+            } else {
+                $default = $this->castDefault($default);
+                $mode = $default !== null
+                    ? InputOption::VALUE_OPTIONAL
+                    : InputOption::VALUE_REQUIRED;
+            }
         }
 
         if (str_contains($name, '|')) {

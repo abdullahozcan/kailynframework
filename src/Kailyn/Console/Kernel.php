@@ -2,6 +2,8 @@
 
 namespace Kailyn\Console;
 
+use Kailyn\Console\Commands\AuthInstallCommand;
+use Kailyn\Console\Commands\AuthUserCommand;
 use Kailyn\Console\Commands\MakeComponentCommand;
 use Kailyn\Console\Commands\MakeControllerCommand;
 use Kailyn\Console\Commands\MakeMigrationCommand;
@@ -42,6 +44,8 @@ class Kernel
             MigrateRollbackCommand::class,
             MigrateFreshCommand::class,
             RouteListCommand::class,
+            AuthInstallCommand::class,
+            AuthUserCommand::class,
         ];
     }
 

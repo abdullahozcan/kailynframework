@@ -143,6 +143,11 @@ class Request
         return $this->header('X-Requested-With') === 'XMLHttpRequest';
     }
 
+    public function ip(): string
+    {
+        return $this->server['REMOTE_ADDR'] ?? '127.0.0.1';
+    }
+
     public function expectsJson(): bool
     {
         $accept = $this->header('Accept');

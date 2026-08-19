@@ -17,10 +17,17 @@ class QueryBuilder
     protected ?int $offset = null;
     protected ?string $lock = null;
     protected array $groups = [];
+    protected ?string $modelClass = null;
 
     public function __construct(Connection $connection)
     {
         $this->connection = $connection;
+    }
+
+    public function forModel(?string $modelClass): static
+    {
+        $this->modelClass = $modelClass;
+        return $this;
     }
 
     public function table(string $table): static
@@ -293,7 +300,15 @@ class QueryBuilder
 
     public function get(): array
     {
-        return $this->connection->select($this->toSql(), $this->bindings);
+        $results = $this->connection->select($this->toSql(), $this->bindings);
+
+        if ($this->modelClass === null) {
+            return $results;
+        }
+
+        $class = $this->modelClass;
+
+        return array_map(fn(object $row) => $class::hydrateRecord($row), $results);
     }
 
     public function first(): ?object
@@ -333,40 +348,50 @@ class QueryBuilder
     public function count(string $column = '*'): int
     {
         $col = $this->validateColumn($column);
+        $columns = $this->columns;
         $this->columns = ["COUNT({$col}) as aggregate"];
         $result = $this->first();
+        $this->columns = $columns;
         return (int) ($result->aggregate ?? 0);
     }
 
     public function avg(string $column): float
     {
         $col = $this->validateColumn($column);
+        $columns = $this->columns;
         $this->columns = ["AVG({$col}) as aggregate"];
         $result = $this->first();
+        $this->columns = $columns;
         return (float) ($result->aggregate ?? 0);
     }
 
     public function sum(string $column): float
     {
         $col = $this->validateColumn($column);
+        $columns = $this->columns;
         $this->columns = ["SUM({$col}) as aggregate"];
         $result = $this->first();
+        $this->columns = $columns;
         return (float) ($result->aggregate ?? 0);
     }
 
     public function min(string $column): float
     {
         $col = $this->validateColumn($column);
+        $columns = $this->columns;
         $this->columns = ["MIN({$col}) as aggregate"];
         $result = $this->first();
+        $this->columns = $columns;
         return (float) ($result->aggregate ?? 0);
     }
 
     public function max(string $column): float
     {
         $col = $this->validateColumn($column);
+        $columns = $this->columns;
         $this->columns = ["MAX({$col}) as aggregate"];
         $result = $this->first();
+        $this->columns = $columns;
         return (float) ($result->aggregate ?? 0);
     }
 
@@ -562,7 +587,7 @@ class QueryBuilder
 
     protected function validateColumn(string $column): string
     {
-        if (preg_match('/^[a-zA-Z_][a-zA-Z0-9_.*]*$/', $column)) {
+        if (preg_match('/^[a-zA-Z_*][a-zA-Z0-9_.*]*$/', $column)) {
             return $column;
         }
         throw new \RuntimeException("Invalid column name: {$column}");

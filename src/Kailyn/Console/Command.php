@@ -162,17 +162,19 @@ abstract class Command extends SymfonyCommand
 
     public function call(string $commandName, array $arguments = []): int
     {
-        return $this->getApplication()->find($commandName)->execute(
-            new \Symfony\Component\Console\Input\ArrayInput($arguments),
-            $this->output
-        );
+        $command = $this->getApplication()->find($commandName);
+        $input = new \Symfony\Component\Console\Input\ArrayInput($arguments);
+        $input->bind($command->getDefinition());
+
+        return $command->execute($input, $this->output);
     }
 
     public function callSilent(string $commandName, array $arguments = []): int
     {
-        return $this->getApplication()->find($commandName)->execute(
-            new \Symfony\Component\Console\Input\ArrayInput($arguments),
-            new \Symfony\Component\Console\Output\NullOutput
-        );
+        $command = $this->getApplication()->find($commandName);
+        $input = new \Symfony\Component\Console\Input\ArrayInput($arguments);
+        $input->bind($command->getDefinition());
+
+        return $command->execute($input, new \Symfony\Component\Console\Output\NullOutput);
     }
 }

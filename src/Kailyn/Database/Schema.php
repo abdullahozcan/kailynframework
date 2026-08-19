@@ -342,8 +342,8 @@ class Schema
             'date' => 'DATE',
             'dateTime' => 'DATETIME',
             'timestamp' => 'TIMESTAMP',
-            'float' => "FLOAT({$column['precision']}, {$column['scale']})",
-            'decimal' => "DECIMAL({$column['precision']}, {$column['scale']})",
+            'float' => "FLOAT(" . ($column['precision'] ?? 8) . ", " . ($column['scale'] ?? 2) . ")",
+            'decimal' => "DECIMAL(" . ($column['precision'] ?? 8) . ", " . ($column['scale'] ?? 2) . ")",
             'json' => 'JSON',
             'jsonb' => 'JSON',
         ];

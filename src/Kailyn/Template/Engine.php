@@ -154,7 +154,7 @@ class Engine
     public function include(string $view, array $data = []): string
     {
         $this->validateViewName($view);
-        return $this->render($view, array_merge($this->shared, $data));
+        return $this->renderPartial($view, array_merge($this->shared, $data));
     }
 
     public function includeIf(string $view, array $data = []): string
@@ -166,7 +166,7 @@ class Engine
             return '';
         }
 
-        return $this->render($view, array_merge($this->shared, $data));
+        return $this->renderPartial($view, array_merge($this->shared, $data));
     }
 
     public function exists(string $view): bool

@@ -6,6 +6,8 @@ use Kailyn\Cache\CacheManager;
 use Kailyn\Component\ComponentManager;
 use Kailyn\Config\Config;
 use Kailyn\Container\Container;
+use Kailyn\Database\Connection;
+use Kailyn\Database\Model;
 use Kailyn\Http\Kernel;
 use Kailyn\Http\Request;
 use Kailyn\Http\Router;
@@ -57,7 +59,28 @@ class Application extends Container
             $this->make(Config::class)->get('cache', [])
         ));
 
+        $this->registerDatabaseConnection();
+
         $this->registerMiddleware();
+    }
+
+    protected function registerDatabaseConnection(): void
+    {
+        $databasePath = $this->basePath('database');
+
+        if (!is_dir($databasePath)) {
+            mkdir($databasePath, 0755, true);
+        }
+
+        $this->singleton(Connection::class, function () {
+            $config = $this->make(Config::class);
+            $default = $config->get('database.default', 'sqlite');
+            $dbConfig = $config->get("database.connections.{$default}");
+
+            return new Connection($dbConfig, $default);
+        });
+
+        Model::connection($this->make(Connection::class));
     }
 
     public function run(): void

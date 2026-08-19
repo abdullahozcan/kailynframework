@@ -1,0 +1,89 @@
+@extends('panel.layouts.app')
+
+@section('title', 'Dashboard')
+@section('header', 'Dashboard')
+
+@section('content')
+    @if($flash = session()->flash('success'))
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            {{ $flash }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    @endif
+
+    @if($flash = session()->flash('error'))
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            {{ $flash }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    @endif
+
+    <div class="row">
+        <div class="col-12 col-sm-6 col-md-4">
+            <div class="info-box">
+                <span class="info-box-icon text-bg-primary shadow-sm">
+                    <i class="bi bi-people-fill"></i>
+                </span>
+                <div class="info-box-content">
+                    <span class="info-box-text">Users</span>
+                    <span class="info-box-number">{{ $userCount ?? 0 }}</span>
+                </div>
+            </div>
+        </div>
+        <div class="col-12 col-sm-6 col-md-4">
+            <div class="info-box">
+                <span class="info-box-icon text-bg-success shadow-sm">
+                    <i class="bi bi-check-circle-fill"></i>
+                </span>
+                <div class="info-box-content">
+                    <span class="info-box-text">Active Sessions</span>
+                    <span class="info-box-number">1</span>
+                </div>
+            </div>
+        </div>
+        <div class="col-12 col-sm-6 col-md-4">
+            <div class="info-box">
+                <span class="info-box-icon text-bg-warning shadow-sm">
+                    <i class="bi bi-pencil-square"></i>
+                </span>
+                <div class="info-box-content">
+                    <span class="info-box-text">Pending Tasks</span>
+                    <span class="info-box-number">0</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title">Registered Users</h3>
+        </div>
+        <div class="card-body p-0">
+            <table class="table table-striped align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Name</th>
+                        <th>Email</th>
+                        <th>Joined</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach($users ?? [] as $user)
+                        <tr>
+                            <td>{{ $user->id }}</td>
+                            <td>{{ $user->name }}</td>
+                            <td>{{ $user->email }}</td>
+                            <td>{{ $user->created_at }}</td>
+                        </tr>
+                    @endforeach
+                    @if(empty($users ?? []))
+                        <tr>
+                            <td colspan="4" class="text-center text-muted py-4">No users registered yet.</td>
+                        </tr>
+                    @endif
+                </tbody>
+            </table>
+        </div>
+    </div>
+@endsection

@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>@yield('title') - {{ config('app.name', 'Kailyn') }}</title>
+
+    <script>
+    (() => {
+        'use strict';
+        const root = document.documentElement;
+        if (root.getAttribute('data-lte-color-mode') === 'off') return;
+        const STORAGE_KEY = 'lte-theme';
+        let stored = null;
+        try { stored = localStorage.getItem(STORAGE_KEY); } catch {}
+        const authored = root.getAttribute('data-bs-theme');
+        let resolved = 'light';
+        if (stored === 'dark' || stored === 'light') {
+            resolved = stored;
+        } else if (authored === 'dark' || authored === 'light') {
+            resolved = authored;
+        } else if (globalThis.matchMedia('(prefers-color-scheme: dark)').matches) {
+            resolved = 'dark';
+        }
+        root.setAttribute('data-bs-theme', resolved);
+        root.style.colorScheme = resolved;
+        if (resolved !== authored) {
+            root.setAttribute('data-lte-theme-resolved', '');
+        }
+    })();
+    </script>
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <meta name="color-scheme" content="light dark">
+    <meta name="theme-color" content="#007bff" media="(prefers-color-scheme: light)">
+    <meta name="theme-color" content="#1a1a1a" media="(prefers-color-scheme: dark)">
+
+    <link rel="icon" href="/vendor/panel/img/AdminLTELogo.png">
+    <link rel="stylesheet" href="/vendor/panel/css/fonts.css">
+    <link rel="stylesheet" href="/vendor/panel/css/overlayscrollbars.min.css">
+    <link rel="stylesheet" href="/vendor/panel/css/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="/vendor/panel/css/adminlte.min.css">
+</head>
+<body class="layout-fixed sidebar-expand-lg bg-body-tertiary">
+    <div class="app-wrapper">
+        @include('panel.partials.navbar')
+        @include('panel.partials.sidebar')
+
+        <main class="app-main">
+            <div class="app-content-header">
+                <div class="container-fluid">
+                    <div class="row">
+                        <div class="col-sm-6">
+                            <h1 class="mb-0 fs-3">@yield('header', 'Dashboard')</h1>
+                        </div>
+                        <div class="col-sm-6">
+                            <nav aria-label="breadcrumb">
+                                <ol class="breadcrumb float-sm-end">
+                                    <li class="breadcrumb-item"><a href="/admin">Home</a></li>
+                                    <li class="breadcrumb-item active" aria-current="page">@yield('breadcrumb', 'Dashboard')</li>
+                                </ol>
+                            </nav>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="app-content">
+                <div class="container-fluid">
+                    @yield('content')
+                </div>
+            </div>
+        </main>
+
+        @include('panel.partials.footer')
+    </div>
+
+    <script src="/vendor/panel/js/popper.min.js"></script>
+    <script src="/vendor/panel/js/bootstrap.min.js"></script>
+    <script src="/vendor/panel/js/overlayscrollbars.browser.es6.min.js"></script>
+    <script src="/vendor/panel/js/adminlte.min.js"></script>
+    <script>
+    (() => {
+        document.querySelectorAll('[data-overlayscrollbars-initialize]').forEach((el) => {
+            OverlayScrollbars(el, { scrollbars: { theme: 'os-theme-dark' } });
+        });
+        document.querySelectorAll('.app-sidebar .sidebar-wrapper').forEach((el) => {
+            OverlayScrollbars(el, { scrollbars: { theme: 'os-theme-dark' } });
+        });
+    })();
+    </script>
+    @yield('scripts')
+</body>
+</html>
