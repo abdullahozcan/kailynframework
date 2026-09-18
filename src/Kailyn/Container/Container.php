@@ -13,6 +13,7 @@ class Container
 {
     private array $bindings = [];
     private array $resolved = [];
+    private array $resolving = [];
 
     public function bind(string $abstract, Closure|string|null $concrete = null, bool $singleton = false): void
     {
@@ -42,22 +43,32 @@ class Container
             return $this->resolved[$abstract];
         }
 
-        if (!isset($this->bindings[$abstract])) {
-            return $this->resolve($abstract);
+        if (isset($this->resolving[$abstract])) {
+            throw new RuntimeException("Circular dependency detected while resolving: {$abstract}");
         }
 
-        $binding = $this->bindings[$abstract];
-        $concrete = $binding['concrete'];
+        $this->resolving[$abstract] = true;
 
-        $object = $concrete instanceof Closure
-            ? $concrete($this)
-            : $this->resolve($concrete);
+        try {
+            if (!isset($this->bindings[$abstract])) {
+                return $this->resolve($abstract);
+            }
 
-        if ($binding['singleton']) {
-            $this->resolved[$abstract] = $object;
+            $binding = $this->bindings[$abstract];
+            $concrete = $binding['concrete'];
+
+            $object = $concrete instanceof Closure
+                ? $concrete($this)
+                : $this->resolve($concrete);
+
+            if ($binding['singleton']) {
+                $this->resolved[$abstract] = $object;
+            }
+
+            return $object;
+        } finally {
+            unset($this->resolving[$abstract]);
         }
-
-        return $object;
     }
 
     public function has(string $abstract): bool
@@ -90,6 +101,10 @@ class Container
 
         if (!$reflection->isInstantiable()) {
             throw new RuntimeException("Class {$class} is not instantiable");
+        }
+
+        if ($reflection->isAbstract() || $reflection->isInterface()) {
+            throw new RuntimeException("Cannot resolve abstract or interface: {$class}");
         }
 
         $constructor = $reflection->getConstructor();

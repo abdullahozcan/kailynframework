@@ -9,9 +9,7 @@ use Kailyn\Http\Response;
 
 class CsrfMiddleware extends Middleware
 {
-    protected array $except = [
-        '/_kailyn/update',
-    ];
+    protected array $except = [];
 
     public function handle(Request $request, callable $next): Response
     {

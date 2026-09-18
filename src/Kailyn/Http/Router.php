@@ -8,6 +8,7 @@ use RuntimeException;
 class Router
 {
     private array $routes = [];
+    private array $compiledCache = [];
     private array $patterns = [
         '{int}' => '(\d+)',
         '{string}' => '([a-zA-Z]+)',
@@ -129,13 +130,20 @@ class Router
 
     private function compilePattern(string $pattern): string
     {
+        if (isset($this->compiledCache[$pattern])) {
+            return $this->compiledCache[$pattern];
+        }
+
         $regex = preg_replace('/\{(\w+)\}/', '(?P<$1>[^/]+)', $pattern);
 
         foreach ($this->patterns as $placeholder => $replacement) {
             $regex = str_replace($placeholder, $replacement, $regex);
         }
 
-        return '#^' . $regex . '$#';
+        $result = '#^' . $regex . '$#';
+        $this->compiledCache[$pattern] = $result;
+
+        return $result;
     }
 }
 

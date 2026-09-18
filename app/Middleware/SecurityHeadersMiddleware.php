@@ -15,8 +15,9 @@ class SecurityHeadersMiddleware extends Middleware
 
         $response->setHeader('X-Content-Type-Options', 'nosniff');
         $response->setHeader('X-Frame-Options', 'SAMEORIGIN');
-        $response->setHeader('X-XSS-Protection', '1; mode=block');
         $response->setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+        $response->setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+        $response->setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; frame-ancestors 'self'");
 
         return $response;
     }

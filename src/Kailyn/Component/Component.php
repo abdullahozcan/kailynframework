@@ -21,6 +21,7 @@ abstract class Component
     protected Container $container;
     protected Engine $engine;
     protected array $errors = [];
+    protected array $sensitiveState = [];
 
     protected array $watchers = [];
     private array $runtimeWatchers = [];
@@ -137,6 +138,9 @@ abstract class Component
         $state = [];
 
         foreach ($this->reactiveProps as $name) {
+            if (in_array($name, $this->sensitiveState, true)) {
+                continue;
+            }
             $state[$name] = $this->$name;
         }
 

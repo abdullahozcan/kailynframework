@@ -24,6 +24,7 @@ abstract class Model implements ArrayAccess, JsonSerializable
     protected array $guarded = ['*'];
     protected array $appends = [];
     protected array $hidden = [];
+    protected array $visible = [];
     protected array $relations = [];
     protected array $with = [];
 
@@ -60,9 +61,7 @@ abstract class Model implements ArrayAccess, JsonSerializable
     public function forceFill(array $attributes): static
     {
         foreach ($attributes as $key => $value) {
-            if ($this->isFillable($key)) {
-                $this->attributes[$key] = $value;
-            }
+            $this->attributes[$key] = $value;
         }
 
         return $this;
@@ -220,6 +219,10 @@ abstract class Model implements ArrayAccess, JsonSerializable
     {
         $attributes = $this->attributes;
 
+        if (!empty($this->visible)) {
+            $attributes = array_intersect_key($attributes, array_flip($this->visible));
+        }
+
         foreach ($this->hidden as $key) {
             unset($attributes[$key]);
         }
@@ -231,6 +234,10 @@ abstract class Model implements ArrayAccess, JsonSerializable
         }
 
         foreach ($this->relations as $key => $value) {
+            if (!empty($this->visible) && !in_array($key, $this->visible, true)) {
+                continue;
+            }
+
             if ($value instanceof Model) {
                 $attributes[$key] = $value->toArray();
             } elseif (is_array($value)) {

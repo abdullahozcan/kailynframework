@@ -117,6 +117,7 @@
                 headers: {
                     'Content-Type': 'application/json',
                     'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRF-TOKEN': getCsrfToken(),
                 },
                 body: JSON.stringify(payload),
             })
@@ -151,6 +152,14 @@
                 this.bindEvents();
             }
         }
+    }
+
+    function getCsrfToken() {
+        const meta = document.querySelector('meta[name="csrf-token"]');
+        if (meta) return meta.getAttribute('content');
+        const input = document.querySelector('input[name="_token"]');
+        if (input) return input.value;
+        return '';
     }
 
     function init() {

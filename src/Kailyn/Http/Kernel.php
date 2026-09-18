@@ -51,17 +51,21 @@ class Kernel
             $debug = $this->container->make(\Kailyn\Config\Config::class)->get('app.debug', false);
 
             if ($debug) {
-                return new Response($e->getMessage() . "\n" . $e->getTraceAsString(), 500);
+                error_log('[Kailyn] RuntimeException: ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine());
+                return new Response('<h1>Server Error</h1><pre>' . htmlspecialchars($e->getMessage()) . '</pre>', 500);
             }
 
+            error_log('[Kailyn] RuntimeException: ' . $e->getMessage());
             return new Response('Server Error', 500);
         } catch (\Throwable $e) {
             $debug = $this->container->make(\Kailyn\Config\Config::class)->get('app.debug', false);
 
             if ($debug) {
-                return new Response($e->getMessage() . "\n" . $e->getTraceAsString(), 500);
+                error_log('[Kailyn] Throwable: ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine());
+                return new Response('<h1>Server Error</h1><pre>' . htmlspecialchars($e->getMessage()) . '</pre>', 500);
             }
 
+            error_log('[Kailyn] Throwable: ' . $e->getMessage());
             return new Response('Server Error', 500);
         }
     }
@@ -132,8 +136,15 @@ class Kernel
         $method = $request->input('_method');
 
         if ($method !== null) {
+            $method = strtoupper($method);
+            $allowed = ['PUT', 'PATCH', 'DELETE'];
+
+            if (!in_array($method, $allowed, true)) {
+                return $request;
+            }
+
             $server = $request->server;
-            $server['REQUEST_METHOD'] = strtoupper($method);
+            $server['REQUEST_METHOD'] = $method;
             return new Request($request->query, $request->all(), $request->headers(), $server);
         }
 

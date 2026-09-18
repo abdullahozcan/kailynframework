@@ -27,7 +27,7 @@ class SessionManager
         $secure = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || $_SERVER['SERVER_PORT'] ?? 443 == 443;
 
         session_set_cookie_params([
-            'lifetime' => 0,
+            'lifetime' => 7200,
             'path' => '/',
             'domain' => '',
             'secure' => $secure,
@@ -63,6 +63,19 @@ class SessionManager
     public function destroy(): void
     {
         $this->start();
+        $_SESSION = [];
+        if (ini_get('session.use_cookies')) {
+            $params = session_get_cookie_params();
+            setcookie(
+                session_name(),
+                '',
+                time() - 42000,
+                $params['path'],
+                $params['domain'],
+                $params['secure'],
+                $params['httponly']
+            );
+        }
         session_destroy();
         $this->started = false;
     }

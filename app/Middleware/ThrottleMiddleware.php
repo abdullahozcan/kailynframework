@@ -25,62 +25,62 @@ class ThrottleMiddleware extends Middleware
 
         if ($attempts >= $this->maxAttempts) {
             $retryAfter = $this->getTimeUntilRetry($key);
-            return new Response('Too many attempts. Please try again in ' . $retryAfter . ' seconds.', 429);
+            $response = new Response('Too many attempts. Please try again in ' . $retryAfter . ' seconds.', 429);
+            $response->setHeader('Retry-After', (string) $retryAfter);
+            return $response;
         }
 
         $this->incrementAttempts($key);
         $response = $next($request);
+
+        $response->setHeader('X-RateLimit-Limit', (string) $this->maxAttempts);
+        $response->setHeader('X-RateLimit-Remaining', (string) max(0, $this->maxAttempts - $attempts - 1));
 
         return $response;
     }
 
     protected function resolveRequestSignature(Request $request): string
     {
-        return sha1($request->ip() . '|' . $request->path());
+        return 'throttle:' . sha1($request->ip() . '|' . $request->path());
     }
 
     protected function getAttempts(string $key): int
     {
-        $session = session()->get('_throttle', []);
-        $attempt = $session[$key] ?? null;
+        $data = cache()->get($key);
 
-        if ($attempt === null) {
+        if ($data === null) {
             return 0;
         }
 
-        if (time() > $attempt['time'] + ($this->decayMinutes * 60)) {
+        if (time() > $data['time'] + ($this->decayMinutes * 60)) {
             $this->resetAttempts($key);
             return 0;
         }
 
-        return $attempt['count'];
+        return $data['count'];
     }
 
     protected function incrementAttempts(string $key): void
     {
-        $session = session()->get('_throttle', []);
-        $attempt = $session[$key] ?? ['count' => 0, 'time' => time()];
+        $data = cache()->get($key);
+        $attempt = $data ?? ['count' => 0, 'time' => time()];
         $attempt['count']++;
-        $session[$key] = $attempt;
-        session()->set('_throttle', $session);
+        cache()->set($key, $attempt, $this->decayMinutes * 60);
     }
 
     protected function resetAttempts(string $key): void
     {
-        $session = session()->get('_throttle', []);
-        unset($session[$key]);
-        session()->set('_throttle', $session);
+        cache()->delete($key);
     }
 
     protected function getTimeUntilRetry(string $key): int
     {
-        $session = session()->get('_throttle', []);
-        $attempt = $session[$key] ?? null;
+        $data = cache()->get($key);
 
-        if ($attempt === null) {
+        if ($data === null) {
             return 0;
         }
 
-        return max(0, ($attempt['time'] + ($this->decayMinutes * 60)) - time());
+        return max(0, ($data['time'] + ($this->decayMinutes * 60)) - time());
     }
 }

@@ -92,6 +92,13 @@ if (!function_exists('back')) {
             $referer = '/';
         }
 
+        $parsed = parse_url($referer);
+        $host = $_SERVER['HTTP_HOST'] ?? '';
+
+        if ($parsed['host'] ?? '' !== '' && ($parsed['host'] ?? '') !== $host) {
+            $referer = '/';
+        }
+
         return Kailyn\Http\Response::redirect($referer);
     }
 }
@@ -126,7 +133,14 @@ if (!function_exists('csrf_token')) {
 if (!function_exists('csrf_field')) {
     function csrf_field(): string
     {
-        return '<input type="hidden" name="_token" value="' . csrf_token() . '">';
+        return '<input type="hidden" name="_token" value="' . htmlspecialchars(csrf_token(), ENT_QUOTES, 'UTF-8') . '">';
+    }
+}
+
+if (!function_exists('csrf_meta')) {
+    function csrf_meta(): string
+    {
+        return '<meta name="csrf-token" content="' . htmlspecialchars(csrf_token(), ENT_QUOTES, 'UTF-8') . '">';
     }
 }
 
