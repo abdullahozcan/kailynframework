@@ -4,6 +4,11 @@
 
 Kailyn is a full-stack PHP 8.3+ framework with a custom template engine, Livewire-style reactive components, fluent query builder, Active Record ORM, schema builder, multi-driver cache, migration system, Symfony-based CLI (Tulpar), session/auth with CSRF, middleware pipeline, and MongoDB support.
 
+**Version:** `0.2.0` — Semantic Versioning (MAJOR.MINOR.PATCH)
+**Version file:** `VERSION` (root)
+**Config:** `config/app.php` → `version` key
+**Helper:** `version()` → returns current framework version
+
 ---
 
 ## Directory Structure
@@ -515,6 +520,7 @@ Custom messages use `:field`, `:param`, `:params` placeholders.
 | Function | Signature |
 |----------|-----------|
 | `env()` | `env(key, default=null)` |
+| `version()` | `version() → returns framework version from VERSION file` |
 | `app()` | `app(abstract=null, instance=null)` |
 | `config()` | `config(key=null, default=null)` |
 | `base_path()` | `base_path(path=null)` |

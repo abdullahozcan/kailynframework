@@ -1,6 +1,7 @@
 {
     "name": "kailyn/framework",
     "type": "project",
+    "version": "0.2.0",
     "require": {
         "php": ">=8.3",
         "symfony/console": "^7.0",

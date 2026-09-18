@@ -13,6 +13,20 @@ if (!function_exists('env')) {
     }
 }
 
+if (!function_exists('version')) {
+    function version(): string
+    {
+        static $version = null;
+        if ($version === null) {
+            $versionFile = dirname(__DIR__, 2) . '/VERSION';
+            $version = file_exists($versionFile)
+                ? trim(file_get_contents($versionFile))
+                : config('app.version', '0.0.0');
+        }
+        return $version;
+    }
+}
+
 if (!function_exists('app')) {
     function app(?string $abstract = null, ?Kailyn\Foundation\Application $instance = null): mixed
     {
