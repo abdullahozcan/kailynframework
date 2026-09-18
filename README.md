@@ -354,9 +354,19 @@ $html = view('pages.home', ['name' => 'Kailyn']);
 
 ## Reactive Component Sistemi
 
-Livewire benzeri, AJAX ile DOM güncelleyen component sistemi.
+Livewire benzeri, AJAX ile DOM güncelleyen component sistemi. PHP her şeyi kontrol eder, JS sadece transport + DOM patching katmanıdır.
 
 ### Component Oluşturma
+
+```bash
+php bin/tulpar make:component counter
+```
+
+**Oluşturulan dosyalar:**
+- `app/Components/{Name}.php` — PHP class (#[Reactive], #[Action])
+- `app/Views/components/{name}.html` — HTML template (k-on:click, k-model)
+
+### PHP Component
 
 ```php
 <?php
@@ -364,6 +374,7 @@ Livewire benzeri, AJAX ile DOM güncelleyen component sistemi.
 namespace App\Components;
 
 use Kailyn\Component\Attributes\Reactive;
+use Kailyn\Component\Attributes\Action;
 use Kailyn\Component\Component;
 
 class Counter extends Component
@@ -371,11 +382,13 @@ class Counter extends Component
     #[Reactive]
     public int $count = 0;
 
+    #[Action]
     public function increment(): void
     {
         $this->count++;
     }
 
+    #[Action]
     public function add(int $amount): void
     {
         $this->count += $amount;
@@ -392,6 +405,7 @@ class Counter extends Component
     <button k-on:click="decrement">-</button>
     <button k-on:click="increment">+</button>
     <button k-on:click="add(10)">+10</button>
+    <button k-on:click="save" k-loading="saving">Kaydet</button>
 </div>
 ```
 
@@ -405,27 +419,92 @@ $router->get('/demo', fn() => view('reactive-demo'));
 @component('counter')
 ```
 
-### Kailyn.js Client-side Directive'ler
+### Client-side Directive'ler (kailyn.js)
 
 | Direktif | Açıklama |
 |----------|----------|
 | `k-on:click="method"` | Click event |
+| `k-on:click.prevent="method"` | Click + preventDefault |
+| `k-on:click.stop="method"` | Click + stopPropagation |
 | `k-on:keydown="method"` | Klavye event |
 | `k-on:keydown.enter="method"` | Enter tuşu |
+| `k-on:keydown.escape="method"` | Escape tuşu |
+| `k-on:keydown.enter.escape="method"` | Birden fazla tuş |
 | `k-on:dblclick="method"` | Çift tık |
-| `k-on:submit="method"` | Form submit |
+| `k-on:submit.prevent="method"` | Form submit + preventDefault |
 | `k-model="property"` | İki yönlü input binding |
-| `k-text="property"` | Text content binding |
+| `k-model.debounce.300ms="property"` | Debounced input |
+| `k-loading="propName"` | Loading durumunda spinner + disable |
+| `k-optimistic` | Server yanıtı beklemeden state'i güncelle |
+| `k-poll.5s="method"` | Periyodik server çağrısı |
+| `k-transition` | DOM güncellemelerinde fade animasyonu |
+| `k-error` | Hata durumunda gösterilecek element |
+
+### Method Call Syntax
+
+```html
+<button k-on:click="increment">Basit call</button>
+<button k-on:click="add(5)">Argümanlı call</button>
+<button k-on:click="update('Hello', true, 42)">Çoklu argüman</button>
+```
+
+Desteklenen argüman tipleri: string (`'text'`), number (`42`), boolean (`true`/`false`), null, undefined.
 
 ### Component Lifecycle
 
 1. Sayfa yüklenir → Component render edilir, `k-state` attribute'unda state tutulur
-2. Kullanıcı `k-on:click` butona tıklar
-3. `kailyn.js` event'i yakalar, method adını ve state'i alır
-4. `POST /_kailyn/update` AJAX isteği gönderilir
-5. Server component'i re-hydrate eder, method'u çalıştırır, re-render eder
-6. JSON yanıt: `{html, state, result}`
-7. `kailyn.js` DOM'u günceller, state'i günceller
+2. `kailyn.js` `[k-component]` element'lerini tarar, `KailynComponent` instance'ları oluşturur
+3. Event delegation ile tüm event'ler root element'te dinlenir
+4. Kullanıcı `k-on:click` butona tıklar
+5. `callMethod()` → request batch queue'ya eklenir (microtask ile tek request'te gönderilir)
+6. `POST /_kailyn/update` AJAX isteği gönderilir (CSRF token header ile)
+7. Server component'i re-hydrate eder, #[Action] method'u çalıştırır, re-render eder
+8. JSON yanıt: `{html, state, result}`
+9. `kailyn.js` DOM'u transition ile günceller, state'i günceller, loading state'leri temizler
+
+### Advanced Features
+
+#### Request Batching
+
+Aynı tick'te yapılan birden fazla method call tek request'te batch edilir:
+
+```js
+// Bu iki call tek bir AJAX request'inde gönderilir
+this.callMethod('setName', ['Ali']);
+this.callMethod('setEmail', ['ali@test.com']);
+```
+
+#### Loading States
+
+```html
+<button k-on:click="save" k-loading="saving">Kaydet</button>
+```
+
+`saving` property'si server işlediği sürece button disable + `.k-loading` class'ı eklenir.
+
+#### Optimistic Updates
+
+```html
+<button k-on:click.toggle="active" k-optimistic>Toggle</button>
+```
+
+State değişikliği server'a gitmeden önce uygulanır. Hata olursa geri alınır.
+
+#### Polling
+
+```html
+<div k-poll.10s="refreshData">...</div>
+```
+
+Her 10 saniyede bir `refreshData` method'u çalıştırılır.
+
+#### Error Handling
+
+```html
+<div k-error style="display:none; color:red;"></div>
+```
+
+Server hata döndürdüğünde `k-error` element'inde mesaj gösterilir + `kailyn:error` event tetiklenir.
 
 ---
 
@@ -821,7 +900,7 @@ kailyn/
 ├── public/
 │   ├── index.php                       # HTTP entry point
 │   ├── router.php                      # Static file router
-│   └── js/kailyn.js                    # Reactive engine (client)
+│   └── js/kailyn.js                    # Reactive engine (client — Livewire-like)
 ├── src/Kailyn/
 │   ├── Foundation/Application.php      # App container
 │   ├── Container/Container.php         # DI container

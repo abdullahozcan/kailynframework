@@ -230,6 +230,15 @@ POST /_kailyn/update {component, method, state, params}
     → renderInner() → return {html, state, result} JSON
 ```
 
+Batch update (multiple methods in one request):
+
+```
+POST /_kailyn/update {component, batch: [{method, params}...], state}
+  → ComponentManager::handleBatchUpdate()
+    → iterate batch, call each method
+    → return {results: [{html, state}...]}
+```
+
 ### State Management
 
 - `#[Reactive]` properties serialized to `k-state` JSON attribute
@@ -238,11 +247,43 @@ POST /_kailyn/update {component, method, state, params}
 
 ### Client (kailyn.js)
 
+Vanilla JS reactive engine. No build step required. Livewire-like behavior.
+
+**Core:**
 - Scans `[k-component]` elements, creates `KailynComponent` instances
-- Binds `k-on:click`, `k-on:keydown`, `k-on:keydown.enter`, `k-on:dblclick`, `k-on:submit`
-- `k-model` for two-way input binding
-- `callMethod()` → `POST /_kailyn/update` → `applyUpdate()` replaces innerHTML, re-binds
+- Event delegation on component root element
 - Method call syntax: `methodName(arg1, 'string', true, null)`
+- `callMethod()` → batched AJAX → `applyUpdate()` patches innerHTML + rebinds events
+
+**Directives:**
+
+| Directive | Description |
+|-----------|-------------|
+| `k-on:event="method"` | Event binding (click, submit, dblclick, etc.) |
+| `k-on:event.mod="method"` | Event with modifiers (`.prevent`, `.stop`) |
+| `k-on:keydown.keys="method"` | Keyboard event with key modifiers (`.enter`, `.escape`, `.tab`, `.space`) |
+| `k-model="property"` | Two-way input binding |
+| `k-model.debounce.ms="property"` | Debounced input (e.g. `k-model.debounce.300ms="query"`) |
+| `k-loading="propName"` | Show loading state on element while server processes |
+| `k-optimistic` | Apply state change before server confirms, revert on error |
+| `k-poll.ms="method"` | Poll server at interval (e.g. `k-poll.5s="refresh"`) |
+| `k-transition` | Fade animation on DOM updates |
+| `k-error` | Error message container (shown on server error) |
+
+**Modifiers:**
+- `.prevent` — `e.preventDefault()`
+- `.stop` — `e.stopPropagation()`
+- `.enter` / `.escape` / `.tab` / `.space` / `.arrowup` / `.arrowdown` / `.delete` / `.backspace` — Key filters
+
+**Features:**
+- **Request batching:** Multiple `callMethod()` in same tick → single AJAX request
+- **Loading states:** `k-loading="saving"` → button disabled + `.k-loading` class during request
+- **Optimistic updates:** `k-optimistic` → state applied immediately, reverted on server error
+- **Error handling:** `k-error` elements show server errors, custom `kailyn:error` event dispatched
+- **Polling:** `k-poll.10s="refreshData"` → periodic server calls while component is in DOM
+- **Transitions:** `k-transition` → fade-in/fade-out on DOM patches
+- **Debounce:** `k-model.debounce.300ms` → debounced sync to server
+- **`$wire()` helper:** `this.$wire('methodName')(params)` — programmatic method calls
 
 ---
 
@@ -448,8 +489,8 @@ Logout:  session->destroy() → redirect
 
 - Token stored in session (32 bytes hex)
 - Validated via `hash_equals()` for all non-GET/HEAD/OPTIONS
-- Exception: `POST /_kailyn/update` (component system)
-- Helpers: `csrf_token()`, `csrf_field()`, `@csrf`
+- `POST /_kailyn/update` requires `X-CSRF-TOKEN` header (sent by kailyn.js)
+- Helpers: `csrf_token()`, `csrf_field()`, `csrf_meta()`, `@csrf`
 - Middleware returns 419 on failure
 
 ---
@@ -486,6 +527,7 @@ Custom messages use `:field`, `:param`, `:params` placeholders.
 | `validator()` | `validator(data, rules, messages=[])` |
 | `csrf_token()` | `csrf_token()` |
 | `csrf_field()` | `csrf_field()` |
+| `csrf_meta()` | `csrf_meta() → <meta name="csrf-token"> tag` |
 | `method_field()` | `method_field(method)` |
 | `cache()` | `cache(key=null, value=null, ttl=null)` |
 
