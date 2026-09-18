@@ -44,7 +44,9 @@ kailyn/
 │   ├── Template/                 # Engine (render/layout/sections), Compiler (directives)
 │   └── Validation/               # Validator (14 rules)
 ├── storage/                      # Compiled views, file cache
-└── stubs/                        # Reserved for code generation stubs
+├── stubs/                        # Reserved for code generation stubs
+├── VERSION                       # Current version: 0.2.0
+└── AGENTS.md                     # This file
 ```
 
 ## Namespace Map (PSR-4)
@@ -101,11 +103,15 @@ bin/tulpar
 
 Resolution: checks resolved → binding → reflection constructor injection.
 
+**Safety guards:**
+- Blocks abstract/interface resolution (no concrete class → RuntimeException)
+- Circular dependency detection via `$resolving` tracking
+
 ---
 
 ## Router
 
-`Http/Router.php` — simple regex-based router.
+`Http/Router.php` — simple regex-based router with compiled pattern cache.
 
 ### Registration
 
@@ -130,6 +136,8 @@ $router->middleware(['auth'])->get('/path', handler);  // RouteRegistrar proxy
 
 Returns `['handler', 'params', 'middleware']` or throws 404. HEAD falls back to GET.
 
+**Performance:** Compiled regex patterns cached in `$compiledCache` to avoid recompilation per request.
+
 ### Internal Route
 
 `POST /_kailyn/update` → `ComponentManager::handleUpdate()` (reactive AJAX).
@@ -150,15 +158,34 @@ middleware1 → middleware2 → route_handler → response
 - Route-specific: `$router->middleware(['auth'])->get(...)`
 - Middleware base: `abstract handle(Request, callable $next): Response`
 
+### Request Method Override
+
+`_method` field validated — only `PUT`, `PATCH`, `DELETE` allowed. Invalid values ignored.
+
+### Error Handling
+
+- **Debug OFF (production):** Generic "Server Error" message, stack trace logged server-side only
+- **Debug ON:** Error message shown (HTML-escaped), stack trace logged server-side only
+
 ### Registered Middleware
 
 | Name | Class | What it does |
 |------|-------|-------------|
 | `auth` | `AuthMiddleware` | Checks session `user_id`, redirect to `/login` |
 | `guest` | `GuestMiddleware` | Redirects to `/dashboard` if authenticated |
-| `csrf` | `CsrfMiddleware` | Validates `_token` / `X-CSRF-TOKEN` via `hash_equals()`, 419 on fail |
-| `security-headers` | `SecurityHeadersMiddleware` | XFO, XSS, Content-Type, Referrer-Policy |
-| `throttle` | `ThrottleMiddleware` | 5 requests / 15 min per IP+path, 429 on exceed |
+| `csrf` | `CsrfMiddleware` | Validates `_token` / `X-CSRF-TOKEN` via `hash_equals()`, 419 on fail. **`POST /_kailyn/update` included** (was exempted, now required) |
+| `security-headers` | `SecurityHeadersMiddleware` | `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy`, `Content-Security-Policy` |
+| `throttle` | `ThrottleMiddleware` | 5 requests / 15 min per IP+path, 429 on exceed. **Uses CacheManager** (not sessions) |
+
+### Security Headers
+
+| Header | Value |
+|--------|-------|
+| `X-Content-Type-Options` | `nosniff` |
+| `X-Frame-Options` | `SAMEORIGIN` |
+| `Referrer-Policy` | `strict-origin-when-cross-origin` |
+| `Permissions-Policy` | `camera=(), microphone=(), geolocation=()` |
+| `Content-Security-Policy` | `default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; frame-ancestors 'self'` |
 
 ---
 
@@ -215,6 +242,10 @@ Layout inheritance: nested sections via output buffering, `@parent` supported.
 | `#[Computed]` | Method | Cached computed property (per-request) |
 | `#[Action]` | Method | Callable from frontend via AJAX |
 
+### Sensitive State
+
+Properties listed in `$sensitiveState` are excluded from client-side JSON. Server-only data never leaks to the DOM.
+
 ### Lifecycle
 
 ```
@@ -259,6 +290,7 @@ Vanilla JS reactive engine. No build step required. Livewire-like behavior.
 - Event delegation on component root element
 - Method call syntax: `methodName(arg1, 'string', true, null)`
 - `callMethod()` → batched AJAX → `applyUpdate()` patches innerHTML + rebinds events
+- **CSRF:** `X-CSRF-TOKEN` header sent with every request
 
 **Directives:**
 
@@ -323,8 +355,11 @@ Active Record with `ArrayAccess` and `JsonSerializable`.
 class User extends Model {
     protected string $table = 'users';      // auto-derived from class name
     protected array $fillable = ['name', 'email', 'password'];
+    protected array $guarded = ['*'];
     protected array $hidden = ['password'];
+    protected array $visible = [];           // if non-empty, only these keys in toArray()
     protected array $appends = ['full_name'];
+    protected array $with = [];              // eager-loaded relations
 }
 ```
 
@@ -334,6 +369,7 @@ class User extends Model {
 **Accessors:** `get{Property}Attribute()`, `set{Property}Attribute()`.
 **Eager loading:** `$with` property or `load('relation')`.
 **Mass-assignment:** protected by `$fillable` / `$guarded` (checked in `forceFill`, `__set`, `offsetSet`).
+**Serialization:** `toArray()` respects `$visible` (if non-empty, filters keys) and `$hidden` (removes keys).
 
 ### MongoDB
 
@@ -370,11 +406,13 @@ remember(key, ttl, fn) | rememberForever(key, fn) | pull(key, default)
 
 ### Drivers
 
-| Driver | Storage | Key Format |
-|--------|---------|-----------|
-| `FileCacheDriver` | JSON files | `{prefix}{sha1(key)}.cache` |
-| `RedisCacheDriver` | Redis `\Redis` extension | `{prefix}{key}` |
-| `DatabaseCacheDriver` | SQL table | `{prefix}{key}` via parameterized queries |
+| Driver | Storage | Serialization | Key Format |
+|--------|---------|---------------|-----------|
+| `FileCacheDriver` | JSON files | `json_encode`/`json_decode` | `{prefix}{sha1(key)}.cache` |
+| `RedisCacheDriver` | Redis `\Redis` extension | Native Redis | `{prefix}{key}` |
+| `DatabaseCacheDriver` | SQL table | `json_encode`/`json_decode` | `{prefix}{key}` via parameterized queries |
+
+> **Security:** All drivers use `json_encode`/`json_decode` (never `serialize`/`unserialize`) to prevent PHP object injection.
 
 ### CacheManager
 
@@ -480,7 +518,11 @@ Cross-command: `call('other:command', args)`, `callSilent()`.
 
 PHP native sessions with secure cookies (`HttpOnly`, `SameSite=Lax`, `Secure` on HTTPS).
 
+**Lifetime:** 7200 seconds (2 hours) — set via `ini_set('session.gc_maxlifetime', 7200)`.
+
 Methods: `start()`, `get()`, `set()`, `has()`, `remove()`, `pull()`, `destroy()`, `regenerate()`, `flash()`, `flashNow()`, `reflash()`, `keep()`, `token()`, `validateToken()`.
+
+**`destroy()` behavior:** Clears `$_SESSION` array, destroys session, deletes session cookie.
 
 ### Auth Flow (in `App\Controllers\AuthController`)
 
@@ -494,8 +536,8 @@ Logout:  session->destroy() → redirect
 
 - Token stored in session (32 bytes hex)
 - Validated via `hash_equals()` for all non-GET/HEAD/OPTIONS
-- `POST /_kailyn/update` requires `X-CSRF-TOKEN` header (sent by kailyn.js)
-- Helpers: `csrf_token()`, `csrf_field()`, `csrf_meta()`, `@csrf`
+- **`POST /_kailyn/update` requires `X-CSRF-TOKEN` header** (sent by kailyn.js)
+- Helpers: `csrf_token()`, `csrf_field()` (HTML-escaped), `csrf_meta()` → `<meta name="csrf-token" content="...">`
 - Middleware returns 419 on failure
 
 ---
@@ -528,11 +570,11 @@ Custom messages use `:field`, `:param`, `:params` placeholders.
 | `storage_path()` | `storage_path(path=null)` |
 | `view()` | `view(name, data=[])` |
 | `redirect()` | `redirect(url, status=302)` |
-| `back()` | `back() → redirect to HTTP_REFERER` |
+| `back()` | `back() → redirect to HTTP_REFERER (validated against app host, prevents open redirect)` |
 | `session()` | `session(key=null, default=null)` |
 | `validator()` | `validator(data, rules, messages=[])` |
 | `csrf_token()` | `csrf_token()` |
-| `csrf_field()` | `csrf_field()` |
+| `csrf_field()` | `csrf_field() → HTML-escaped hidden input` |
 | `csrf_meta()` | `csrf_meta() → <meta name="csrf-token"> tag` |
 | `method_field()` | `method_field(method)` |
 | `cache()` | `cache(key=null, value=null, ttl=null)` |
@@ -545,6 +587,27 @@ When modifying cache drivers, use `json_encode`/`json_decode` (not `serialize`/`
 
 ---
 
+## Security Fixes Applied (v0.2.0)
+
+| Fix | File | Description |
+|-----|------|-------------|
+| CSRF on AJAX | `CsrfMiddleware.php`, `kailyn.js` | `/_kailyn/update` no longer exempted; JS sends `X-CSRF-TOKEN` header |
+| Debug leak | `Kernel.php` | Stack traces logged server-side only, never sent to client |
+| Open redirect | `helpers.php` | `back()` validates referer against app host |
+| `_method` validation | `Kernel.php` | Only `PUT`, `PATCH`, `DELETE` allowed |
+| `forceFill()` | `Model.php` | Now truly bypasses `$guarded` check |
+| Session lifetime | `SessionManager.php` | 7200s limit via `gc_maxlifetime` |
+| Rate limiting | `ThrottleMiddleware.php` | Uses CacheManager instead of sessions |
+| Security headers | `SecurityHeadersMiddleware.php` | CSP + Permissions-Policy added, X-XSS-Protection removed |
+| Container safety | `Container.php` | Abstract/interface blocked, circular dependency detection |
+| Model `$visible` | `Model.php` | `toArray()` respects `$visible` filter |
+| Router cache | `Router.php` | Compiled regex patterns cached |
+| Session destroy | `SessionManager.php` | Clears `$_SESSION` + deletes cookie |
+| Sensitive state | `Component.php` | `$sensitiveState` excludes props from client JSON |
+| HTML-escaped CSRF | `helpers.php` | `csrf_field()` escaped, new `csrf_meta()` helper |
+
+---
+
 ## Key Conventions
 
 - **Models**: Active Record, singular class name → plural snake_case table
@@ -554,4 +617,6 @@ When modifying cache drivers, use `json_encode`/`json_decode` (not `serialize`/`
 - **Migrations**: anonymous class returning `Migration` instance
 - **Config**: PHP files returning arrays, accessed via `config('file.key')`
 - **Routes**: defined in `routes/web.php`, middleware via `->middleware([...])`
-- **Services resolved from Container via `app(Service::class)` or type-hinted constructor parameters**
+- **Services**: resolved from Container via `app(Service::class)` or type-hinted constructor parameters
+- **Versioning**: Semantic Versioning (MAJOR.MINOR.PATCH), tracked in `VERSION`, `config/app.php`, `composer.json`
+- **Git commits**: Conventional Commits (`feat:`, `fix:`, `security:`, `chore:`, `refactor:`, `docs:`)
