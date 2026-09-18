@@ -55,6 +55,9 @@ class QueryBuilder
             $operator = '=';
         }
 
+        $this->validateColumn($column);
+        $operator = $this->validateOperator((string) $operator);
+
         $this->wheres[] = [
             'type' => 'basic',
             'column' => $column,
@@ -75,6 +78,8 @@ class QueryBuilder
 
     public function whereIn(string $column, array $values, string $boolean = 'and', bool $not = false): static
     {
+        $this->validateColumn($column);
+
         $this->wheres[] = [
             'type' => $not ? 'not-in' : 'in',
             'column' => $column,
@@ -94,6 +99,8 @@ class QueryBuilder
 
     public function whereNull(string $column, string $boolean = 'and'): static
     {
+        $this->validateColumn($column);
+
         $this->wheres[] = [
             'type' => 'null',
             'column' => $column,
@@ -105,6 +112,8 @@ class QueryBuilder
 
     public function whereNotNull(string $column, string $boolean = 'and'): static
     {
+        $this->validateColumn($column);
+
         $this->wheres[] = [
             'type' => 'notnull',
             'column' => $column,
@@ -116,6 +125,8 @@ class QueryBuilder
 
     public function whereBetween(string $column, array $values, string $boolean = 'and', bool $not = false): static
     {
+        $this->validateColumn($column);
+
         $this->wheres[] = [
             'type' => $not ? 'not-between' : 'between',
             'column' => $column,
@@ -140,6 +151,10 @@ class QueryBuilder
             $operator = '=';
         }
 
+        $this->validateColumn($first);
+        $operator = $this->validateOperator($operator);
+        $this->validateColumn($second);
+
         $this->wheres[] = [
             'type' => 'column',
             'first' => $first,
@@ -153,6 +168,11 @@ class QueryBuilder
 
     public function join(string $table, string $first, string $operator, string $second, string $type = 'inner'): static
     {
+        $this->validateColumn($table);
+        $this->validateColumn($first);
+        $operator = $this->validateOperator($operator);
+        $this->validateColumn($second);
+
         $this->joins[] = [
             'type' => $type,
             'table' => $table,
@@ -176,9 +196,12 @@ class QueryBuilder
 
     public function orderBy(string $column, string $direction = 'asc'): static
     {
+        $this->validateColumn($column);
+        $direction = $this->validateDirection($direction);
+
         $this->orders[] = [
             'column' => $column,
-            'direction' => strtoupper($direction),
+            'direction' => $direction,
         ];
 
         return $this;
@@ -201,12 +224,20 @@ class QueryBuilder
 
     public function groupBy(mixed ...$groups): static
     {
+        foreach ($groups as $group) {
+            if (is_string($group)) {
+                $this->validateColumn($group);
+            }
+        }
         $this->groups = array_merge($this->groups, $groups);
         return $this;
     }
 
     public function having(string $column, string $operator, mixed $value, string $boolean = 'and'): static
     {
+        $this->validateColumn($column);
+        $operator = $this->validateOperator($operator);
+
         $this->havings[] = [
             'type' => 'basic',
             'column' => $column,
@@ -591,6 +622,25 @@ class QueryBuilder
             return $column;
         }
         throw new \RuntimeException("Invalid column name: {$column}");
+    }
+
+    protected function validateOperator(string $operator): string
+    {
+        $lower = strtolower(trim($operator));
+        $allowed = ['=', '!=', '<>', '<', '>', '<=', '>=', 'like', 'not like', 'is', 'is not'];
+        if (!in_array($lower, $allowed, true)) {
+            throw new \RuntimeException("Invalid SQL operator: {$operator}");
+        }
+        return $operator;
+    }
+
+    protected function validateDirection(string $direction): string
+    {
+        $upper = strtoupper(trim($direction));
+        if (!in_array($upper, ['ASC', 'DESC'], true)) {
+            throw new \RuntimeException("Invalid ORDER BY direction: {$direction}");
+        }
+        return $upper;
     }
 
     protected function getWhereBindings(): array

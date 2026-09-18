@@ -80,7 +80,7 @@ class Kernel
         return $this->symfonyApp->run($input, $output);
     }
 
-    public function getSymfonyApp(): SymfonyApplication
+    public function getSymfonyApp(): TulparApplication
     {
         return $this->symfonyApp;
     }

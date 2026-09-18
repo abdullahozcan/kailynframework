@@ -41,7 +41,7 @@ class DatabaseCacheDriver implements CacheDriver
             [$this->prefix($key)]
         );
 
-        if ($row === null) {
+        if ($row === false || $row === null) {
             return $default;
         }
 
@@ -101,7 +101,7 @@ class DatabaseCacheDriver implements CacheDriver
             [$this->prefix($key)]
         );
 
-        if ($row === null) {
+        if ($row === false || $row === null) {
             return false;
         }
 

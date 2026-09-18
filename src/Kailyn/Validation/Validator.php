@@ -225,6 +225,10 @@ class Validator
 
     protected function validateString(string $field, mixed $value, array $params): bool
     {
+        if ($value === null || $value === '') {
+            return true;
+        }
+
         return is_string($value);
     }
 
@@ -234,7 +238,12 @@ class Validator
             return true;
         }
 
-        return filter_var($value, FILTER_VALIDATE_URL) !== false;
+        if (filter_var($value, FILTER_VALIDATE_URL) === false) {
+            return false;
+        }
+
+        $scheme = strtolower(parse_url($value, PHP_URL_SCHEME) ?? '');
+        return in_array($scheme, ['http', 'https'], true);
     }
 
     protected function validateConfirmed(string $field, mixed $value, array $params): bool

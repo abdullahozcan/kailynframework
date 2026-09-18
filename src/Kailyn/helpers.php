@@ -102,18 +102,35 @@ if (!function_exists('back')) {
         $referer = $_SERVER['HTTP_REFERER'] ?? '/';
         $referer = str_replace(["\r", "\n"], '', $referer);
 
-        if (!str_starts_with($referer, '/') && !str_starts_with($referer, 'http')) {
-            $referer = '/';
+        if (str_starts_with($referer, '/')) {
+            return Kailyn\Http\Response::redirect($referer);
         }
 
         $parsed = parse_url($referer);
-        $host = $_SERVER['HTTP_HOST'] ?? '';
 
-        if ($parsed['host'] ?? '' !== '' && ($parsed['host'] ?? '') !== $host) {
-            $referer = '/';
+        if (!isset($parsed['host']) || !isset($parsed['path'])) {
+            return Kailyn\Http\Response::redirect('/');
         }
 
-        return Kailyn\Http\Response::redirect($referer);
+        $trustedHost = '';
+        $appUrl = config('app.url', '');
+        if (is_string($appUrl) && $appUrl !== '') {
+            $trustedHost = parse_url($appUrl, PHP_URL_HOST) ?? '';
+        }
+        if ($trustedHost === '') {
+            $trustedHost = $_SERVER['SERVER_NAME'] ?? '';
+        }
+
+        if ($trustedHost === '' || $parsed['host'] !== $trustedHost) {
+            return Kailyn\Http\Response::redirect('/');
+        }
+
+        $path = $parsed['path'];
+        if (isset($parsed['query']) && $parsed['query'] !== '') {
+            $path .= '?' . $parsed['query'];
+        }
+
+        return Kailyn\Http\Response::redirect($path);
     }
 }
 
@@ -161,7 +178,7 @@ if (!function_exists('csrf_meta')) {
 if (!function_exists('method_field')) {
     function method_field(string $method): string
     {
-        return '<input type="hidden" name="_method" value="' . strtoupper($method) . '">';
+        return '<input type="hidden" name="_method" value="' . htmlspecialchars(strtoupper($method), ENT_QUOTES, 'UTF-8') . '">';
     }
 }
 

@@ -30,11 +30,15 @@ class ThrottleMiddleware extends Middleware
             return $response;
         }
 
-        $this->incrementAttempts($key);
         $response = $next($request);
 
+        if ($response->getStatus() >= 400) {
+            $this->incrementAttempts($key);
+        }
+
+        $remaining = max(0, $this->maxAttempts - $this->getAttempts($key));
         $response->setHeader('X-RateLimit-Limit', (string) $this->maxAttempts);
-        $response->setHeader('X-RateLimit-Remaining', (string) max(0, $this->maxAttempts - $attempts - 1));
+        $response->setHeader('X-RateLimit-Remaining', (string) $remaining);
 
         return $response;
     }

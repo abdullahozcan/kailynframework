@@ -1,9 +1,9 @@
 <?php
 
 return [
-    'name' => 'Kailyn',
+    'name' => env('APP_NAME', 'Kailyn'),
     'version' => '0.2.0',
-    'env' => 'development',
+    'env' => env('APP_ENV', 'production'),
     'debug' => env('APP_DEBUG', false),
-    'url' => 'http://localhost:8000',
+    'url' => env('APP_URL', 'http://localhost'),
 ];

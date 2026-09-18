@@ -18,7 +18,7 @@ class Response
     public static function json(mixed $data, int $status = 200, array $headers = []): static
     {
         return new static(
-            json_encode($data, JSON_UNESCAPED_UNICODE),
+            json_encode($data, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT),
             $status,
             array_merge(['Content-Type' => 'application/json'], $headers)
         );
@@ -40,6 +40,8 @@ class Response
         http_response_code($this->status);
 
         foreach ($this->headers as $key => $value) {
+            $key = str_replace(["\r", "\n"], '', (string) $key);
+            $value = str_replace(["\r", "\n"], '', (string) $value);
             header("{$key}: {$value}");
         }
 

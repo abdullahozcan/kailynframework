@@ -32,7 +32,7 @@ class Connection
             'mysql' => $this->connectMysql($config),
             'pgsql' => $this->connectPgsql($config),
             'sqlsrv' => $this->connectSqlsrv($config),
-            default => throw new RuntimeException("Unsupported driver: {$driver}"),
+            default => throw new RuntimeException("Unsupported driver: {$this->driver}"),
         };
 
         $this->pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);

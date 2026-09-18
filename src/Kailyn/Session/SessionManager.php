@@ -24,7 +24,7 @@ class SessionManager
 
     private function configureCookie(): void
     {
-        $secure = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || $_SERVER['SERVER_PORT'] ?? 443 == 443;
+        $secure = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || (($_SERVER['SERVER_PORT'] ?? 443) == 443);
 
         session_set_cookie_params([
             'lifetime' => 7200,

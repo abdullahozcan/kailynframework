@@ -74,7 +74,20 @@ class Request
 
     public function host(): string
     {
-        return $this->server['HTTP_HOST'] ?? 'localhost';
+        $host = $this->server['HTTP_HOST'] ?? '';
+
+        if (function_exists('config') && $host !== '') {
+            $appUrl = config('app.url', '');
+            if (is_string($appUrl) && $appUrl !== '') {
+                $trustedHost = parse_url($appUrl, PHP_URL_HOST);
+                if (is_string($trustedHost) && $trustedHost !== '' && $host !== $trustedHost) {
+                    $port = parse_url($appUrl, PHP_URL_PORT);
+                    return $port ? $trustedHost . ':' . $port : $trustedHost;
+                }
+            }
+        }
+
+        return $host !== '' ? $host : 'localhost';
     }
 
     public function fullUrl(): string

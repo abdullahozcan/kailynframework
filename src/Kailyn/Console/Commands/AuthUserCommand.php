@@ -73,7 +73,7 @@ class AuthUserCommand extends Command
         $user = User::create([
             'name' => $name,
             'email' => $email,
-            'password' => password_hash($password, PASSWORD_BCRYPT, ['cost' => 12]),
+            'password' => $password,
         ]);
 
         $this->info("User created successfully.");

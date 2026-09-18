@@ -51,7 +51,11 @@ abstract class Model implements ArrayAccess, JsonSerializable
     {
         foreach ($attributes as $key => $value) {
             if ($this->isFillable($key)) {
-                $this->attributes[$key] = $value;
+                if ($this->hasSetMutator($key)) {
+                    $this->applySetMutator($key, $value);
+                } else {
+                    $this->attributes[$key] = $value;
+                }
             }
         }
 
@@ -82,7 +86,7 @@ abstract class Model implements ArrayAccess, JsonSerializable
 
     public function isGuarded(string $key): bool
     {
-        return in_array($key, $this->guarded);
+        return in_array('*', $this->guarded, true) || in_array($key, $this->guarded, true);
     }
 
     public static function find(mixed $id): ?static
@@ -270,13 +274,21 @@ abstract class Model implements ArrayAccess, JsonSerializable
             return $this->loadRelation($key);
         }
 
+        if ($this->hasGetMutator($key)) {
+            return $this->applyGetMutator($key);
+        }
+
         return $this->attributes[$key] ?? null;
     }
 
     public function __set(string $key, mixed $value): void
     {
         if ($this->isFillable($key)) {
-            $this->attributes[$key] = $value;
+            if ($this->hasSetMutator($key)) {
+                $this->applySetMutator($key, $value);
+            } else {
+                $this->attributes[$key] = $value;
+            }
         }
     }
 
@@ -296,12 +308,22 @@ abstract class Model implements ArrayAccess, JsonSerializable
 
     public function offsetGet(mixed $offset): mixed
     {
+        if (is_string($offset) && $this->hasGetMutator($offset)) {
+            return $this->applyGetMutator($offset);
+        }
+
         return $this->attributes[$offset] ?? null;
     }
 
     public function offsetSet(mixed $offset, mixed $value): void
     {
-        if ($this->isFillable($offset)) {
+        if (!is_string($offset) || !$this->isFillable($offset)) {
+            return;
+        }
+
+        if ($this->hasSetMutator($offset)) {
+            $this->applySetMutator($offset, $value);
+        } else {
             $this->attributes[$offset] = $value;
         }
     }
@@ -364,6 +386,18 @@ abstract class Model implements ArrayAccess, JsonSerializable
     public function hasSetMutator(string $key): bool
     {
         return method_exists($this, 'set' . str_replace('_', '', ucwords($key, '_')) . 'Attribute');
+    }
+
+    protected function applySetMutator(string $key, mixed $value): void
+    {
+        $method = 'set' . str_replace('_', '', ucwords($key, '_')) . 'Attribute';
+        $this->$method($value);
+    }
+
+    protected function applyGetMutator(string $key): mixed
+    {
+        $method = 'get' . str_replace('_', '', ucwords($key, '_')) . 'Attribute';
+        return $this->$method();
     }
 
     // ---- Relationships ----
