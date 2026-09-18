@@ -11,6 +11,11 @@ class MigrateCommand extends Command
 
     public function handle(): int
     {
+        if (config('app.env') === 'production' && !$this->option('force')) {
+            $this->error('Cannot run migrations in production without --force.');
+            return self::FAILURE;
+        }
+
         $migrator = Migrator::resolve();
 
         if (!$migrator->migrationTableExists()) {

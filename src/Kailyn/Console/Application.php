@@ -9,9 +9,10 @@ class Application extends SymfonyApplication
 {
     private KailynApplication $kailynApp;
 
-    public function __construct(KailynApplication $kailynApp, string $name = 'Tulpar - Kailyn Framework', string $version = '1.0.0')
+    public function __construct(KailynApplication $kailynApp, string $name = 'Tulpar - Kailyn Framework', ?string $version = null)
     {
         $this->kailynApp = $kailynApp;
+        $version = $version ?? (function_exists('version') ? version() : '0.0.0');
         parent::__construct($name, $version);
     }
 

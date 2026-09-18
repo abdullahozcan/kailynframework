@@ -15,7 +15,7 @@ class FileCacheDriver implements CacheDriver
         $this->prefix = $config['prefix'] ?? '';
 
         if (!is_dir($this->path)) {
-            if (!mkdir($this->path, 0755, true) && !is_dir($this->path)) {
+            if (!mkdir($this->path, 0700, true) && !is_dir($this->path)) {
                 throw new RuntimeException("Cannot create cache directory: {$this->path}");
             }
         }

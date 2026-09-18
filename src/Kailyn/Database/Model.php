@@ -270,7 +270,7 @@ abstract class Model implements ArrayAccess, JsonSerializable
             return $this->relations[$key];
         }
 
-        if (method_exists($this, $key)) {
+        if (method_exists($this, $key) && (new \ReflectionMethod($this, $key))->isPublic()) {
             return $this->loadRelation($key);
         }
 

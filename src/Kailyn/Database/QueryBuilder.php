@@ -344,8 +344,10 @@ class QueryBuilder
 
     public function first(): ?object
     {
+        $limit = $this->limit;
         $this->limit = 1;
         $result = $this->get();
+        $this->limit = $limit;
         return $result[0] ?? null;
     }
 

@@ -254,6 +254,6 @@ class Engine
             return true;
         }
 
-        return filemtime($path) >= filemtime($compiled);
+        return filemtime($path) > filemtime($compiled);
     }
 }

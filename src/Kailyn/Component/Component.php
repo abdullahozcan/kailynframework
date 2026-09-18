@@ -28,7 +28,7 @@ abstract class Component
 
     public function __construct(Container $container, Engine $engine)
     {
-        $this->componentId = str_replace('.', '', uniqid('k', true));
+        $this->componentId = bin2hex(random_bytes(16));
         $this->container = $container;
         $this->engine = $engine;
 

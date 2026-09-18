@@ -109,10 +109,11 @@ class SessionManager
     public function reflash(): void
     {
         $this->start();
-        if (isset($_SESSION['_flash'])) {
-            foreach ($_SESSION['_flash'] as $key => $value) {
-                $_SESSION['_flash'][$key] = $value;
+        if (!empty($this->flash)) {
+            if (!isset($_SESSION['_flash'])) {
+                $_SESSION['_flash'] = [];
             }
+            $_SESSION['_flash'] = array_merge($_SESSION['_flash'], $this->flash);
         }
     }
 

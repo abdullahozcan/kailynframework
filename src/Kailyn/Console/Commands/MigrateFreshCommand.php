@@ -11,6 +11,11 @@ class MigrateFreshCommand extends Command
 
     public function handle(): int
     {
+        if (config('app.env') === 'production' && !$this->option('force')) {
+            $this->error('Cannot run migrate:fresh in production without --force.');
+            return self::FAILURE;
+        }
+
         if (!$this->option('force')) {
             $confirmed = $this->confirm(
                 'Are you sure you want to drop all tables and re-run all migrations?',

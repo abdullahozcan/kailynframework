@@ -66,18 +66,22 @@ class RedisCacheDriver implements CacheDriver
 
     public function clear(): bool
     {
-        $keys = $this->redis->keys($this->prefix . '*');
+        $iterator = null;
+        $pattern = $this->prefix . '*';
 
-        if (!empty($keys)) {
-            return $this->redis->del($keys) > 0;
-        }
+        do {
+            $keys = $this->redis->scan($iterator, $pattern, 100);
+            if (!empty($keys)) {
+                $this->redis->del($keys);
+            }
+        } while ($iterator > 0);
 
         return true;
     }
 
     public function has(string $key): bool
     {
-        return $this->redis->exists($this->prefix($key));
+        return (bool) $this->redis->exists($this->prefix($key));
     }
 
     public function remember(string $key, ?int $ttl, callable $callback): mixed

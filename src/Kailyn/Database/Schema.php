@@ -365,7 +365,7 @@ class Schema
         if (array_key_exists('default', $column)) {
             $default = $column['default'];
             if (is_string($default)) {
-                $default = "'" . addslashes($default) . "'";
+                $default = $this->connection->getPdo()->quote($default);
             } elseif ($default === null) {
                 $default = 'NULL';
             }

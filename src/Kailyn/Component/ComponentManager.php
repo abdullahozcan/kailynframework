@@ -102,6 +102,10 @@ class ComponentManager
 
     private function resolveClass(string $name): string
     {
+        if (!preg_match('/^[a-zA-Z0-9]+$/', $name)) {
+            throw new RuntimeException("Invalid component name: {$name}");
+        }
+
         $class = 'App\\Components\\' . ucfirst($name);
 
         if (!class_exists($class)) {

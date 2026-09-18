@@ -28,13 +28,6 @@ $router->get('/design', function (Kailyn\Template\Engine $view) {
     return $view->render('design');
 });
 
-// ---- Auth Routes (Guest) ----
-
-$router->get('/login', [App\Controllers\AuthController::class, 'showLoginForm']);
-$router->middleware(['throttle'])->post('/login', [App\Controllers\AuthController::class, 'login']);
-$router->get('/register', [App\Controllers\AuthController::class, 'showRegisterForm']);
-$router->middleware(['throttle'])->post('/register', [App\Controllers\AuthController::class, 'register']);
-
 // ---- Auth Routes (Protected) ----
 
 $router->middleware(['auth'])->get('/dashboard', [App\Controllers\DashboardController::class, 'index']);

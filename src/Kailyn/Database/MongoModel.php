@@ -63,7 +63,7 @@ abstract class MongoModel implements ArrayAccess, JsonSerializable
 
     public function isGuarded(string $key): bool
     {
-        return in_array($key, $this->guarded);
+        return in_array('*', $this->guarded, true) || in_array($key, $this->guarded, true);
     }
 
     public static function find(mixed $id): ?static
@@ -158,7 +158,9 @@ abstract class MongoModel implements ArrayAccess, JsonSerializable
 
     public function __set(string $key, mixed $value): void
     {
-        $this->attributes[$key] = $value;
+        if ($this->isFillable($key)) {
+            $this->attributes[$key] = $value;
+        }
     }
 
     public function __isset(string $key): bool
@@ -178,7 +180,9 @@ abstract class MongoModel implements ArrayAccess, JsonSerializable
 
     public function offsetSet(mixed $offset, mixed $value): void
     {
-        $this->attributes[$offset] = $value;
+        if (is_string($offset) && $this->isFillable($offset)) {
+            $this->attributes[$offset] = $value;
+        }
     }
 
     public function offsetUnset(mixed $offset): void

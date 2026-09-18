@@ -42,8 +42,10 @@ class Compiler
             '/@endfor/' => '<?php endfor; ?>',
             '/@while\s*\((.*)\)/' => '<?php while ($1): ?>',
             '/@endwhile/' => '<?php endwhile; ?>',
-            '/@continue(?:\s*\((.*)\))?/' => '<?php if (!(isset($1) && !($1))): continue; endif; ?>',
-            '/@break(?:\s*\((.*)\))?/' => '<?php if (!(isset($1) && !($1))): break; endif; ?>',
+            '/@continue(?!\s*\()/' => '<?php continue; ?>',
+            '/@continue\s*\((.*)\)/' => '<?php if ($1): continue; endif; ?>',
+            '/@break(?!\s*\()/' => '<?php break; ?>',
+            '/@break\s*\((.*)\)/' => '<?php if ($1): break; endif; ?>',
 
             // Conditionals
             '/@unless\s*\((.*)\)/' => '<?php if (!($1)): ?>',
